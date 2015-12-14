@@ -1,0 +1,9 @@
+build/
+
+# eclipse project
+.settings/
+Debug/
+.cproject
+.project
+.pydevproject
+

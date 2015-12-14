@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<devicetree memfile="/dev/rsoc-acc.0" offset="0x40000000">
+	<device base="0x00000000" size="0x40000" name="HFEX">
+		<compatible>xlnx,axi_hfex-1.00.a</compatible>
+	</device>
+	<device base="0x00040000" size="0x40000" name="filter">
+		<compatible>ug4-150,sprobe1_filter-1.00.a</compatible>
+	</device>
+	<device base="0x00080000" size="0x10000" name="tsu">
+		<compatible>ug4-150,axi_tsu-1.00.a</compatible>
+	</device>
+	<device base="0x000A0000" size="0x10000" name="usonda">
+		<compatible>uprobe,usonda_core-1.00.a</compatible>
+	</device>
+	<device base="0x000D0000" size="0x10000" name="pattern_match">
+		<compatible>uprobe,pattern_match-1.01.a</compatible>
+	</device>
+	<device base="0x000B0000" size="0x10000" name="dispather">
+		<compatible>uprobe,dispather-1.00.a</compatible>
+	</device>
+	<device base="0x000E0000" size="0x10000" name="protocol_identifier">
+		<compatible>uprobe,protocol_identifier-1.00.a</compatible>
+	</device>
+	<device base="0x00100000" size="0x40000" name="stat_collector">
+		<compatible>uprobe,stats-1.00.a</compatible>
+	</device>
+</devicetree>

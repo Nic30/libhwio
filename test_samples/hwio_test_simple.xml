@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<devicetree memfile="test_samples/mem0.dat" offset="0x0">
+	<device base="0x00000000" size="0x1000" name="dev0">
+		<compatible>dev0,v-1.00.a</compatible>
+	</device>
+	<device base="0x00001000" size="0x1000" name="dev1">
+		<compatible>dev1,v-1.00.a</compatible>
+	</device>
+</devicetree>
