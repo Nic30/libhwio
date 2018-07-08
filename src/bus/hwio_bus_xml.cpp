@@ -113,7 +113,7 @@ hwio_bus_xml::hwio_bus_xml(const char * xml_file_name) {
 
 	xmlDoc *doc = xmlReadFile(xml_file_name, NULL, 0);
 	if (doc == nullptr)
-		throw xml_wrong_format("Failed to parse");
+		throw xml_wrong_format(std::string("Failed to parse or open file:") + xml_file_name);
 
 	load_devices(doc);
 
