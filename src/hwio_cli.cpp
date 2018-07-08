@@ -14,7 +14,7 @@ namespace hwio {
 
 const char * hwio_help_str() {
 	return "HWIO " HWIO_VERSION " params:\n" //
-	"   if no config is specified ~/.hwio_config.xml is used, if it does not exists /etc/hwio/default.xml is used\n" //
+	"   if no config is specified ~/.hwio_config.xml is used, if it does not exists /etc/hwio/default.xml is used\n"//
 	"   --hwio_config <path.xml>   load hwio configuration from xml file\n"//
 	"   --hwio_devicetree <path>   root of devicetree to load device info from (def. \"/proc/device-tree\")\n"//
 	"   --hwio_device_mem <path>   file with memory space of devices, use with -hwio_devicetree (def. \"/dev/mem\")\n"//
@@ -25,7 +25,6 @@ const char * hwio_help_str() {
 /**
  * load hwio_bus from xml node
  **/
-
 ihwio_bus * hwio_bus_from_xml_node(xmlNode * n) {
 	if (xmlStrcmp(n->name, (const xmlChar *) "remote") == 0) {
 		xmlChar *host = xmlGetProp(n, (const xmlChar *) "host");
@@ -45,14 +44,16 @@ ihwio_bus * hwio_bus_from_xml_node(xmlNode * n) {
 			throw xml_wrong_format(
 					"definition of devicetree bus in xml missing \"devicetree\" attribute");
 		xmlChar *mem = xmlGetProp(n, (const xmlChar *) "mem");
-				if (mem == nullptr) {
-					xmlFree(devicetree);
-					throw xml_wrong_format(
-							"definition of devicetree bus in xml missing \"mem\" attribute");
-				}
+		if (mem == nullptr) {
+			xmlFree(devicetree);
+			throw xml_wrong_format(
+					"definition of devicetree bus in xml missing \"mem\" attribute");
+		}
 		return new hwio_bus_devicetree((char *) devicetree, (char *) mem);
 	} else {
-		throw xml_wrong_format(std::string("unknown definition of bus (") + (const char *) n->name + ")");
+		throw xml_wrong_format(
+				std::string("unknown definition of bus (")
+						+ (const char *) n->name + ")");
 	}
 }
 
@@ -81,25 +82,25 @@ std::vector<ihwio_bus *> hwio_config_load(xmlDoc * doc) {
 
 std::vector<ihwio_bus *> hwio_config_load(const char * xml_file_name) {
 	/*
-		 * this initialize the library and check potential ABI mismatches
-		 * between the version it was compiled for and the actual shared
-		 * library used.
-		 */
-		LIBXML_TEST_VERSION
+	 * this initialize the library and check potential ABI mismatches
+	 * between the version it was compiled for and the actual shared
+	 * library used.
+	 */
+	LIBXML_TEST_VERSION
 
-		xmlDoc *doc = xmlReadFile(xml_file_name, NULL, 0);
-		if (doc == nullptr)
-			throw xml_wrong_format("Failed to parse");
+	xmlDoc *doc = xmlReadFile(xml_file_name, NULL, 0);
+	if (doc == nullptr)
+		throw xml_wrong_format("Failed to parse");
 
-		auto res = hwio_config_load(doc);
+	auto res = hwio_config_load(doc);
 
-		xmlFreeDoc(doc);
-		/*
-		 * Cleanup function for the XML library.
-		 */
-		xmlCleanupParser();
+	xmlFreeDoc(doc);
+	/*
+	 * Cleanup function for the XML library.
+	 */
+	xmlCleanupParser();
 
-		return res;
+	return res;
 }
 
 std::vector<ihwio_bus *> hwio_load_default_config() {
@@ -108,111 +109,125 @@ std::vector<ihwio_bus *> hwio_load_default_config() {
 	std::string config_in_home(homedir);
 	config_in_home += "/.hwio_config.xml";
 
-	std::vector<std::string> config_names = {
-			config_in_home,
-			"/etc/hwio/default.xml"
-	};
-	for(auto & name: config_names) {
+	std::vector<std::string> config_names = { config_in_home,
+			"/etc/hwio/default.xml" };
+	for (auto & name : config_names) {
 		struct stat buffer;
 		bool file_exists = stat(name.c_str(), &buffer) == 0;
 		if (file_exists)
 			return hwio_config_load(name.c_str());
 	}
-	throw std::runtime_error("Hwio can not find any config file (~/.hwio_config.xml or /etc/hwio/default.xml)");
+	throw std::runtime_error(
+			"Hwio can not find any config file (~/.hwio_config.xml or /etc/hwio/default.xml)");
 }
 
-void consumed_with_param(std::vector<int> & consumed_args, int index) {
-	consumed_args.push_back(index);
-	consumed_args.push_back(index + 1);
-}
+void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 
-void rm_comsumed_args(std::vector<int> & consumed_args, int & argc, char * argv[]) {
-	std::remove_if(argv, argv + argc,
-	               [&argv, &consumed_args](char * & d) {
-						int i = (&d - &*argv);
-						bool do_remove = std::find(consumed_args.begin(),
-								consumed_args.end(),
-								i) != consumed_args.end();
-						return  !do_remove;
-					}
-	);
+	// build names of options
+	std::vector<int> consumed_args;
+	std::vector<std::string> reducible_args;
+	for (const option * o = long_opts; o->name != nullptr; o++) {
+		std::string opt = std::string("--") + o->name;
+		assert(o->has_arg == required_argument);
+	}
+
+	// search for options in argv
+	for (int i = 1; i < argc; i++) {
+		for (auto opt : reducible_args) {
+			if (opt == argv[i]) {
+				consumed_args.push_back(i);
+				consumed_args.push_back(i + 1);
+				i++;
+				break;
+			}
+		}
+	}
+
+	// remove options and it's arguments
+	std::remove_if(argv, argv + argc, [&argv, &consumed_args](char * & d) {
+		int i = (&d - &*argv);
+		bool do_remove = std::find(consumed_args.begin(),
+				consumed_args.end(),
+				i) != consumed_args.end();
+		return !do_remove;
+	});
 	argc -= consumed_args.size();
 }
 
 ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	const option long_opts[] = { //
 			{ "hwio_config", required_argument, nullptr, 'c' },     //
-			{ "hwio_devicetree", required_argument, nullptr, 'd' }, //
-			{ "hwio_device_mem", required_argument, nullptr, 'm' }, //
-			{ "hwio_remote", required_argument, nullptr, 'r' },     //
-			{ "hwio_xml", required_argument, nullptr, 'x' },        //
-			{ nullptr, no_argument, nullptr, 0 }                    //
-	};
+					{ "hwio_devicetree", required_argument, nullptr, 'd' }, //
+					{ "hwio_device_mem", required_argument, nullptr, 'm' }, //
+					{ "hwio_remote", required_argument, nullptr, 'r' },     //
+					{ "hwio_xml", required_argument, nullptr, 'x' },        //
+					{ nullptr, no_argument, nullptr, 0 }                    //
+			};
 
 	std::vector<ihwio_bus *> buses;
-	int index = 0;
 	const char * hwio_devicetree = nullptr;
 	const char * hwio_device_mem = nullptr;
 	bool config_specified = false;
-	std::vector<int> consumed_args;
 
-	while (true) {
-		const auto opt = getopt_long(argc, argv, "", long_opts, &index);
-		ihwio_bus * bus = nullptr;
-		if (-1 == opt)
-			break;
+	int original_opterr = opterr;
+	opterr = 0;
+	try {
+		while (true) {
+			const auto opt = getopt_long(argc, argv, "", long_opts, nullptr);
+			ihwio_bus * bus = nullptr;
+			if (-1 == opt)
+				break;
 
-		switch (opt) {
-		case 'c':
-			for (auto b : hwio_config_load(optarg))
-				buses.push_back(b);
-			config_specified = true;
+			switch (opt) {
+			case 'c':
+				for (auto b : hwio_config_load(optarg))
+					buses.push_back(b);
+				config_specified = true;
 
-			consumed_with_param(consumed_args, index);
-			break;
+				break;
 
-		case 'r':
-			buses.push_back(new hwio_bus_remote(optarg));
+			case 'r':
+				buses.push_back(new hwio_bus_remote(optarg));
+				break;
 
-			consumed_with_param(consumed_args, index);
-			break;
+			case 'x':
+				buses.push_back(new hwio_bus_xml(optarg));
+				break;
 
-		case 'x':
-			buses.push_back(new hwio_bus_xml(optarg));
+			case 'd':
+				if (hwio_devicetree != nullptr) {
+					if (hwio_device_mem == nullptr)
+						bus = new hwio_bus_devicetree(hwio_devicetree);
+					else
+						bus = new hwio_bus_devicetree(hwio_devicetree,
+								hwio_device_mem);
+					buses.push_back(bus);
+					hwio_device_mem = nullptr;
+				}
+				hwio_devicetree = optarg;
+				break;
 
-			consumed_with_param(consumed_args, index);
-			break;
-
-		case 'd':
-			if (hwio_devicetree != nullptr) {
-				if (hwio_device_mem == nullptr)
-					bus = new hwio_bus_devicetree(hwio_devicetree);
+			case 'm':
+				if (hwio_device_mem != nullptr)
+					throw std::runtime_error(
+							"hwio_device_mem cli arg redefinition without hwio_devicetree specified");
 				else
-					bus = new hwio_bus_devicetree(hwio_devicetree,
-							hwio_device_mem);
-				buses.push_back(bus);
-				hwio_device_mem = nullptr;
+					hwio_device_mem = optarg;
+				break;
+
+			default:
+				// skip unknown args and let them for main application
+				break;
 			}
-			hwio_devicetree = optarg;
-
-			consumed_with_param(consumed_args, index);
-			break;
-
-		case 'm':
-			if (hwio_device_mem != nullptr)
-				throw std::runtime_error(
-						"hwio_device_mem cli arg redefinition without hwio_devicetree specified");
-			else
-				hwio_device_mem = optarg;
-
-			consumed_with_param(consumed_args, index);
-			break;
-
-		default:
-			// skip unknown args and let them for main application
-			break;
 		}
+	} catch (const std::exception & e) {
+		opterr = original_opterr;
+		optind = 1;
+		throw e;
 	}
+	// put back original state of getopt
+	opterr = original_opterr;
+	optind = 1;
 
 	// consume potential leftover
 	if (hwio_devicetree != nullptr) {
@@ -223,7 +238,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 			bus = new hwio_bus_devicetree(hwio_devicetree, hwio_device_mem);
 		buses.push_back(bus);
 	}
-	rm_comsumed_args(consumed_args, argc, argv);
+	rm_comsumed_args(long_opts, argc, argv);
 
 	if (!config_specified)
 		for (auto b : hwio_load_default_config())
