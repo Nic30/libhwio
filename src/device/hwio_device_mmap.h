@@ -29,14 +29,13 @@ class hwio_device_mmap: public ihwio_dev {
 	// pointer on mmaped device memory
 	void *dev_mem;
 
-	// base address and size of device from bus
-	hwio_phys_addr_t on_bus_base_addr;
-	hwio_phys_addr_t on_bus_size;
-
 	// name of file from which device should be mmaped
 	const char * mem_file_name;
 
 public:
+	// base address and size of device from bus
+	const hwio_phys_addr_t on_bus_base_addr;
+	const hwio_phys_addr_t on_bus_size;
 	static const char * DEFAULT_MEM_PATH;
 	/*
 	 * @param devI base address where address space of device starts
