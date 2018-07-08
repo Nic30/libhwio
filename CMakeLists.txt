@@ -54,10 +54,12 @@ set(LIB_HWIO_SRC
 find_package(LibXml2 REQUIRED)
 
 # define main library
-add_library(hwio ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC})
-target_include_directories(hwio PRIVATE 
-	${LIBXML2_INCLUDE_DIR} ${LIB_HWIO_PRIVATE_INCLUDE_DIRS})
-target_link_libraries(hwio ${LIBXML2_LIBRARIES})
+add_library(hwio STATIC ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC})
+target_include_directories(hwio
+	PUBLIC ${LIBXML2_INCLUDE_DIR}
+	PUBLIC ${LIB_HWIO_PRIVATE_INCLUDE_DIRS})
+target_link_libraries(hwio 
+	PUBLIC ${LIBXML2_LIBRARIES})
 
 set(LIB_HWIO_TEST_SRC 
 	./src/selftest/test_hwio_bus_remote.cpp
@@ -73,13 +75,12 @@ set(LIB_HWIO_TEST_SRC
 # define testsuite executable
 add_executable(libhwio_test ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC} ${LIB_HWIO_TEST_SRC})
 target_include_directories(libhwio_test PRIVATE ${LIBXML2_INCLUDE_DIR} ${LIB_HWIO_PRIVATE_INCLUDE_DIRS})
-target_link_libraries(libhwio_test ${LIBXML2_LIBRARIES})
 
 # Add pthread library
 find_package(Threads REQUIRED)
 target_link_libraries(libhwio_test
-	Threads::Threads
-	${LIBXML2_LIBRARIES}
+	PUBLIC Threads::Threads
+	PUBLIC ${LIBXML2_LIBRARIES}
 )
 
 
