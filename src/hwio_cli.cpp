@@ -226,7 +226,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	rm_comsumed_args(consumed_args, argc, argv);
 
 	if (!config_specified)
-		for (auto b : hwio_config_load(optarg))
+		for (auto b : hwio_load_default_config())
 			buses.push_back(b);
 
 	if (buses.size() == 0)
