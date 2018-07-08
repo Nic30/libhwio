@@ -64,7 +64,7 @@ std::vector<ihwio_bus *> hwio_config_load(xmlDoc * doc) {
 				n0->next) {
 			if (n0->type == XML_ELEMENT_NODE
 					&& xmlStrcmp(n0->name, (const xmlChar *) "bus") == 0) {
-				for (xmlNode *n1 = root->xmlChildrenNode; n1 != nullptr;
+				for (xmlNode *n1 = n0->xmlChildrenNode; n1 != nullptr;
 						n1 = n1->next) {
 					if (n1->type == XML_ELEMENT_NODE) {
 						auto b = hwio_bus_from_xml_node(n1);
