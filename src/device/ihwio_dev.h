@@ -174,11 +174,14 @@ public:
 	virtual void name_set(char * name) {
 		if (this->name)
 			free(this->name);
-		if (name == nullptr)
-			this->name = strdup(name);
-		else
+
+		if (name == nullptr) {
 			this->name = nullptr;
+		} else {
+			this->name = strdup(name);
+		}
 	}
+
 	virtual char * name_get() {
 		return name;
 	}
