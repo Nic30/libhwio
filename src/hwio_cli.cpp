@@ -14,7 +14,7 @@ namespace hwio {
 
 const char * hwio_help_str() {
 	return "HWIO " HWIO_VERSION " params:\n" //
-	"   if no config is specified ~/.hwio_config.xml is used, if it does not exists /etc/hwio/default.xml is used\n"//
+	"   if no configuration file is specified ~/.hwio/config.xml is used, if it does not exists /etc/hwio/config.xml is used\n"//
 	"   --hwio_config <path.xml>   load hwio configuration from xml file\n"//
 	"   --hwio_devicetree <path>   root of devicetree to load device info from (def. \"/proc/device-tree\")\n"//
 	"   --hwio_device_mem <path>   file with memory space of devices, use with -hwio_devicetree (def. \"/dev/mem\")\n"//
@@ -107,10 +107,10 @@ std::vector<ihwio_bus *> hwio_load_default_config() {
 	struct passwd *pw = getpwuid(getuid());
 	const char *homedir = pw->pw_dir;
 	std::string config_in_home(homedir);
-	config_in_home += "/.hwio_config.xml";
+	config_in_home += "/.hwio/config.xml";
 
 	std::vector<std::string> config_names = { config_in_home,
-			"/etc/hwio/default.xml" };
+			"/etc/hwio/config.xml" };
 	for (auto & name : config_names) {
 		struct stat buffer;
 		bool file_exists = stat(name.c_str(), &buffer) == 0;
