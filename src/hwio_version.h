@@ -23,7 +23,7 @@ struct __attribute__((packed)) hwio_version {
 	 *
 	 * @throw std::runtime_error
 	 */
-	hwio_version(const char * version_str);
+	hwio_version(const std::string & version_str);
 	hwio_version(int major = HWIO_VERSION_NA, int minor = HWIO_VERSION_NA,
 			int subminor = HWIO_VERSION_NA);
 

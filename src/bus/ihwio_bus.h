@@ -24,10 +24,10 @@ public:
 			auto dev_specs = dev->get_spec();
 			if (dev_specs.size() == 0) {
 				// search all name matches
-				const char * name = dev->name_get();
+				auto name = dev->name_get();
 				if (name != nullptr)
 					for (auto & s : spec) {
-						if (s.name != nullptr && strcmp(name, s.name) == 0) {
+						if (s.name != "" && name == s.name) {
 							res.push_back(dev);
 							break;
 						}

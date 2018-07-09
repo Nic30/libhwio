@@ -9,20 +9,9 @@ vector<hwio_comp_spec> HwioServer::extractSpecFromClientQuery(
 	vector<hwio_comp_spec> spec;
 
 	for (Dev_query_item * item = q->items; item < q->items + cnt; ++item) {
-//#ifdef LOG_INFO
-//		LOG_INFO << "[QUERY]:" << item->vendor_name << ":" << item->type_name
-//				<< " " << item->version.major << ":" << item->version.minor
-//				<< ":" << item->version.subminor << endl;
-//#endif
-		const char * name = item->device_name;
-		const char * vendor = item->vendor_name;
-		const char * type = item->type_name;
-		if (name[0] == '\0')
-			name = nullptr;
-		if (vendor[0] == '\0')
-			vendor = nullptr;
-		if (type[0] == '\0')
-			type = nullptr;
+		char * name = item->device_name;
+		char * vendor = item->vendor_name;
+		char * type = item->type_name;
 
 		spec.push_back( { vendor, type, item->version });
 		spec.back().name_set(name);

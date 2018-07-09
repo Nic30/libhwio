@@ -14,10 +14,9 @@ hwio_bus_remote::hwio_bus_remote(const char * host) :
 	server.connect_to_server();
 }
 
-static void copy_str_to_resp(const char * src, char * dst) {
+static void copy_str_to_resp(const std::string & src, char * dst) {
 	memset(dst, 0, MAX_NAME_LEN);
-	if (src != nullptr)
-		strncpy(dst, src, MAX_NAME_LEN);
+	strncpy(dst, src.c_str(), MAX_NAME_LEN);
 }
 
 void hwio_bus_remote::spec_list_to_query(std::vector<hwio_comp_spec> spec) {

@@ -52,9 +52,9 @@ hwio_version::hwio_version(int major, int minor, int subminor) {
 }
 
 static std::regex hwio_version_regex("^(\\d+)\\.(\\d+)(\\.(\\w|\\d+))?");
-hwio_version::hwio_version(const char * version_str) {
+hwio_version::hwio_version(const std::string & version_str) {
 	std::smatch m;
-	std::string v = version_str;
+	auto v = version_str;
 	if (std::regex_match(v, m, hwio_version_regex)) {
 		major = std::stoi(m[1].str());
 		minor = std::stoi(m[2].str());
