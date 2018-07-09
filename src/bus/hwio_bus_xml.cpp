@@ -12,6 +12,7 @@ namespace hwio {
 hwio_comp_spec parse_xml_compatible(xmlDoc * doc, xmlNode * cur) {
 	xmlChar *compatible = xmlNodeListGetString(doc, cur->xmlChildrenNode, 1);
 	hwio_comp_spec spec = { (const char *) compatible };
+	xmlFree(compatible);
 	return spec;
 }
 
