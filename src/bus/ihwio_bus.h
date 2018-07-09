@@ -24,8 +24,8 @@ public:
 			auto dev_specs = dev->get_spec();
 			if (dev_specs.size() == 0) {
 				// search all name matches
-				auto name = dev->name_get();
-				if (name != nullptr)
+				auto name = dev->name();
+				if (name != "")
 					for (auto & s : spec) {
 						if (s.name != "" && name == s.name) {
 							res.push_back(dev);

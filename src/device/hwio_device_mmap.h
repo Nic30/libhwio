@@ -46,7 +46,7 @@ public:
 	hwio_device_mmap(std::vector<hwio_comp_spec> spec,
 			hwio_phys_addr_t base_addr, hwio_phys_addr_t size,
 			const char * mem_path = DEFAULT_MEM_PATH);
-	virtual void name_set(char * name) override;
+	virtual void name(const std::string & name) override;
 
 	virtual void attach() override;
 	virtual const std::vector<hwio_comp_spec> & get_spec() const override;

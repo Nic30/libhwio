@@ -30,10 +30,10 @@ class hwio_error_dev_init_fail: public std::runtime_error {
  * contains virtual read and write methods
  * */
 class ihwio_dev {
-	char * name;
+	std::string _M_name;
 public:
 	ihwio_dev() :
-			name(nullptr) {
+			_M_name("") {
 	}
 	virtual const std::vector<hwio_comp_spec> & get_spec() const = 0;
 
@@ -171,19 +171,12 @@ public:
 		return !(*this == other);
 	}
 
-	virtual void name_set(char * name) {
-		if (this->name)
-			free(this->name);
-
-		if (name == nullptr) {
-			this->name = nullptr;
-		} else {
-			this->name = strdup(name);
-		}
+	virtual void name(const std::string & name) {
+		this->_M_name = name;
 	}
 
-	virtual char * name_get() {
-		return name;
+	virtual const std::string & name() {
+		return _M_name;
 	}
 
 	virtual ~ihwio_dev() {

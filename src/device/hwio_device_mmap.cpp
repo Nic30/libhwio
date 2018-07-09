@@ -35,8 +35,8 @@ hwio_device_mmap::hwio_device_mmap(std::vector<hwio_comp_spec> spec,
 	this->mem_file_name = mem_file_name;
 }
 
-void hwio_device_mmap::name_set(char * name) {
-	ihwio_dev::name_set(name);
+void hwio_device_mmap::name(const std::string & name) {
+	ihwio_dev::name(name);
 	for (auto & s : spec) {
 		s.name_set(name);
 	}

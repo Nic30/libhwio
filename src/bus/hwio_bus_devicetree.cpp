@@ -218,7 +218,7 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr,
 	}
 
 	auto dev = new hwio_device_mmap(spec, base, size, mem_path);
-	dev->name_set(name);
+	dev->name(name);
 	return dev;
 }
 
