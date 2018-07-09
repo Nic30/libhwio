@@ -1,5 +1,8 @@
 build/
 
+# test tmp files
+test_samples/mem0.dat
+
 # eclipse project
 .settings/
 Debug/
