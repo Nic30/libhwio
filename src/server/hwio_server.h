@@ -14,6 +14,7 @@
 #include <unistd.h>    //close
 #include <arpa/inet.h> //close
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <netinet/in.h>
 #include <sys/time.h>  //FD_SET, FD_ISSET, FD_ZERO macros
 #include <sstream>     // stringstream
@@ -32,14 +33,14 @@ namespace hwio {
 class ClientInfo {
 public:
 	int id;
-	int socket;
+	int fd;
 	std::vector<ihwio_dev *> devices;
 	ClientInfo(int id, int _socket) :
-			id(id), socket(_socket), devices() {
+			id(id), fd(_socket), devices() {
 	}
 	~ClientInfo() {
-		if (socket >= 0)
-			close(socket);
+		if (fd >= 0)
+			close(fd);
 	}
 };
 
@@ -63,6 +64,9 @@ private:
 	// buffers for rx/tx
 	char rx_buffer[BUFFER_SIZE];
 	char tx_buffer[BUFFER_SIZE];
+
+	std::vector<struct pollfd> poll_fds;
+	std::map<int, ClientInfo*> fd_to_client;
 
 	// meta-informations about clients in server
 	// some items may be nullptr if client has disconnected
@@ -118,10 +122,10 @@ private:
 	 **/
 	ClientInfo * add_new_client(int socket);
 
-	void handle_client_requests(fd_set * readfds);
+	void handle_client_requests(int client_fd);
 
 	static constexpr unsigned MAX_PENDING_CONNECTIONS = 32;
-	static constexpr unsigned SELECT_TIMEOUT_MS = 100;
+	static constexpr unsigned POLL_TIMEOUT_MS = 100;
 
 	static ihwio_dev * client_get_dev(ClientInfo * client, dev_id_t devId);
 

@@ -193,8 +193,8 @@ void test_remote_ping() {
 	thread server_thread(run_server);
 	server_start_delay();
 
-	for (int i0 = 0; i0 < 10; i0++) {
-		auto con = make_unique<hwio_client_to_server_con>(server_addr);
+	for (int i0 = 0; i0 < MAX_CLIENTS; i0++) {
+		auto con = new hwio_client_to_server_con(server_addr);
 		con->connect_to_server();
 		for (int i = 0; i < 10; i++) {
 			cout.flush();
@@ -202,6 +202,7 @@ void test_remote_ping() {
 			//cout << i << "--------------------" << endl;
 			test_assert(con->ping() == 0, "ping works");
 		}
+		delete con;
 	}
 
 	run_server_flag = false;

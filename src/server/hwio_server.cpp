@@ -1,16 +1,13 @@
 #include "hwio_server.h"
 #include "hwio_remote_utils.h"
 
-#include <sys/time.h>
-
+#include <algorithm>
 
 using namespace std;
 using namespace hwio;
 
-
 HwioServer::HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses) :
 		addr(addr), master_socket(-1), buses(buses) {
-	//addr->ai_flags = AI_PASSIVE;
 }
 
 void HwioServer::prepare_server_socket() {
@@ -47,6 +44,11 @@ void HwioServer::prepare_server_socket() {
 		errss << "hwio_server listen failed: " << gai_strerror(err);
 		throw std::runtime_error(errss.str());
 	}
+
+	struct pollfd pfd;
+	pfd.fd = master_socket;
+	pfd.events = POLLIN;
+	poll_fds.push_back(pfd);
 
 	// now can accept the incoming connection
 #ifdef LOG_INFO
@@ -119,136 +121,118 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 }
 
 ClientInfo * HwioServer::add_new_client(int socket) {
-	int id = 0;
+	unsigned id = 0;
 	for (auto & client : clients) {
 		//if position is empty
 		if (client == nullptr) {
-			client = new ClientInfo(id, socket);
-			client->id = id;
-#ifdef LOG_INFO
-			LOG_INFO << "Adding to list of sockets as " << id << endl;
-#endif
-			return client;
+			break;
 		}
 		id++;
 	}
-	auto client = new ClientInfo(id, socket);
-	clients.push_back(client);
+	ClientInfo * client = new ClientInfo(id, socket);
+	if (id < clients.size())
+		clients[id] = client;
+	else
+		clients.push_back(client);
+
+	assert(fd_to_client.find(socket) == fd_to_client.end());
+	fd_to_client[socket] = client;
+	struct pollfd pfd;
+	pfd.events = POLLIN;
+	pfd.fd = socket;
+	poll_fds.push_back(pfd);
 	return client;
 }
 
 void HwioServer::handle_client_msgs(bool * run_server) {
-	//set of socket descriptors
-	fd_set readfds;
-	int max_sd;
-	int sd;
-	struct sockaddr_in address;
-	int addrlen = sizeof(address);
-	int new_socket;
-	struct timespec timeout;
-	memset(&timeout, 0, sizeof(timeout));
-	timeout.tv_sec = SELECT_TIMEOUT_MS / 1000;
-	timeout.tv_nsec = (SELECT_TIMEOUT_MS - timeout.tv_sec * 1000) / 1000;
-
 	while (*run_server) {
-		// clear the socket set
-		FD_ZERO(&readfds);
-
-		// add master socket to set
-		FD_SET(master_socket, &readfds);
-		max_sd = master_socket;
-
-		// add child sockets to set
-		for (ClientInfo * client : clients) {
-			if (client == nullptr) {
-				continue;
-			}
-			// socket descriptor
-			sd = client->socket;
-
-			// if valid socket descriptor then add to read list
-			if (sd > 0)
-				FD_SET(sd, &readfds);
-
-			// highest file descriptor number, need it for the select function
-			if (sd > max_sd)
-				max_sd = sd;
-		}
-
 		// wait for an activity on one of the sockets , timeout is NULL ,
 		// so wait indefinitely
-		if ((pselect(max_sd + 1, &readfds, NULL, NULL, &timeout, NULL) < 0)
-				&& (errno != EINTR)) {
-			LOG_ERR << "pselect error" << endl;
+		int err = poll(&poll_fds[0], poll_fds.size(), POLL_TIMEOUT_MS);
+		if (err == 0) {
+			continue;
+		} else if (err < 0) {
+			LOG_ERR << "poll error" << endl;
 		}
 
 		// If something happened on the master socket,
 		// then its an incoming connection and we need to spot new client info instance
-		if (FD_ISSET(master_socket, &readfds)) {
-			if ((new_socket = accept(master_socket,
-					(struct sockaddr *) &address, (socklen_t*) &addrlen)) < 0)
-				throw runtime_error("error in accept for client socket");
+		for (auto & fd : poll_fds) {
+			if (fd.revents == 0)
+				continue;
+
+			if (fd.fd == master_socket) {
+				struct sockaddr_in address;
+				int addrlen = sizeof(address);
+				int new_socket;
+				if ((new_socket = accept(master_socket,
+						(struct sockaddr *) &address, (socklen_t*) &addrlen))
+						< 0)
+					throw runtime_error("error in accept for client socket");
 
 #ifdef LOG_INFO
-			//inform user of socket number - used in send and receive commands
-			LOG_INFO << "New connection, ip:" << inet_ntoa(address.sin_addr)
-					<< ", port:" << ntohs(address.sin_port) << endl;
+				//inform user of socket number - used in send and receive commands
+				LOG_INFO << "New connection, ip:" << inet_ntoa(address.sin_addr)
+				<< ", port:" << ntohs(address.sin_port) << endl;
 #endif
-			add_new_client(new_socket);
-		} else {
-			handle_client_requests(&readfds);
+				add_new_client(new_socket);
+			} else {
+				handle_client_requests(fd.fd);
+			}
 		}
 	}
 }
-void HwioServer::handle_client_requests(fd_set * readfds) {
+void HwioServer::handle_client_requests(int sd) {
 	// else its some IO operation on some other socket
-	for (ClientInfo * client : clients) {
-		if (client == nullptr)
-			continue;
-		int sd = client->socket;
+	//Check if it was for closing , and also read the
+	//incoming message
+	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(sd);
+	if (_client == fd_to_client.end())
+		throw std::runtime_error(std::string("fd_to_client does not know about socket for client on socket:")
+								 + to_string(sd));
 
-		if (FD_ISSET(sd, readfds)) {
-			//Check if it was for closing , and also read the
-			//incoming message
-			size_t rx_data_size;
-			PProcRes respMeta(true, 0);
-			Hwio_packet_header header;
-			if ((rx_data_size = read(sd, &header, sizeof(Hwio_packet_header)))
-					== 0) {
-				respMeta = send_err(MALFORMED_PACKET, "No command received");
-			} else {
-				if (header.body_len) {
-					if ((rx_data_size = read(sd, rx_buffer, header.body_len))
-							== 0)
-						respMeta = send_err(MALFORMED_PACKET,
-								"Wrong frame body");
-				}
-				respMeta = handle_msg(client, header);
-				if (respMeta.tx_size) {
-					if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
-						throw std::runtime_error(
-								"Can not send response on client msg");
-					}
-				}
-			}
+	auto client = _client->second;
+	assert(client->fd == sd);
 
-			if (respMeta.disconnect) {
-				//Somebody disconnected , get his details and print
-#ifdef LOG_INFO
-				LOG_INFO << "Client " << client->id << " disconnected" << endl;
-
-				for (auto d : client->devices) {
-					LOG_INFO << "    owned device:" << endl;
-					for (auto & s : d->get_spec())
-						LOG_INFO << "        " << s.to_str() << endl;
-				}
-#endif
-				// Close the socket and mark as 0 in list for reuse
-				// packet had wrong format or connection was disconnected.
-				clients[client->id] = nullptr;
-				delete client;
+	size_t rx_data_size;
+	PProcRes respMeta(true, 0);
+	Hwio_packet_header header;
+	if ((rx_data_size = read(sd, &header, sizeof(Hwio_packet_header))) == 0) {
+		respMeta = send_err(MALFORMED_PACKET, "No command received");
+	} else {
+		if (header.body_len) {
+			if ((rx_data_size = read(sd, rx_buffer, header.body_len)) == 0)
+				respMeta = send_err(MALFORMED_PACKET, "Wrong frame body");
+		}
+		respMeta = handle_msg(client, header);
+		if (respMeta.tx_size) {
+			if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
+				throw std::runtime_error("Can not send response on client msg");
 			}
 		}
+	}
+
+	if (respMeta.disconnect) {
+		//Somebody disconnected , get his details and print
+#ifdef LOG_INFO
+		LOG_INFO << "Client " << client->id << " disconnected" << endl;
+
+		for (auto d : client->devices) {
+			LOG_INFO << "    owned device:" << endl;
+			for (auto & s : d->get_spec())
+			LOG_INFO << "        " << s.to_str() << endl;
+		}
+#endif
+		// Close the socket and mark as 0 in list for reuse
+		// packet had wrong format or connection was disconnected.
+		clients[client->id] = nullptr;
+		fd_to_client.erase(sd);
+		poll_fds.erase(
+			std::remove_if(poll_fds.begin(), poll_fds.end(), [sd](struct pollfd item) {
+				return item.fd == sd;
+			}));
+		close(sd);
+		delete client;
 	}
 }
 

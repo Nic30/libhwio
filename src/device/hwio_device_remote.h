@@ -52,7 +52,7 @@ public:
 
 		auto resp = reinterpret_cast<RemoteCallRet*>(server->rx_buffer);
 		#ifdef LOG_INFO
-			LOG_INFO << "[CLIENT] Read data: " << resp->data << endl;
+			LOG_INFO << "[CLIENT] remote_call return: " << std::endl;
 		#endif
 		if (!std::is_same<RET_T, void>::value) {
 			return *((RET_T *) resp->ret);

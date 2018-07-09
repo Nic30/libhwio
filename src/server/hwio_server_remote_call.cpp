@@ -23,7 +23,7 @@ HwioServer::PProcRes HwioServer::handle_remote_call(ClientInfo * client,
 	auto plugin = _plugin->second;
 
 #ifdef LOG_INFO
-	LOG_INFO << "REMOTE CALL:" << (int) rdReq->devId << rc->fn_name << endl;
+	LOG_INFO << "REMOTE CALL:" << (int) rc->dev_id << rc->fn_name << endl;
 #endif
 
 	auto resp = reinterpret_cast<HwioFrame<RemoteCallRet>*>(tx_buffer);
