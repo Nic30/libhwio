@@ -19,6 +19,9 @@
 #include <sstream>     // stringstream
 #include <assert.h>
 #include <netdb.h>
+#include <map>
+#include <type_traits>
+#include <functional>
 
 #include "hwio_remote.h"
 #include "ihwio_dev.h"
@@ -40,7 +43,7 @@ public:
 	}
 };
 
-class Hwio_server {
+class HwioServer {
 private:
 	/**
 	 * Packet processing result
@@ -99,6 +102,11 @@ private:
 	 * */
 	PProcRes handle_write(ClientInfo * client, Hwio_packet_header header);
 
+	/**
+	 * HWIO remote call of plugin function
+	 */
+	PProcRes handle_remote_call(ClientInfo * client, Hwio_packet_header header);
+
 	/*
 	 * Process message from client
 	 * @return PProcRes with size of tx data in tx_buffer and disconnect flag
@@ -112,15 +120,44 @@ private:
 
 	void handle_client_requests(fd_set * readfds);
 
-	static const int MAX_PENDING_CONNECTIONS;
-	static const int SELECT_TIMEOUT_MS;
+	static constexpr unsigned MAX_PENDING_CONNECTIONS = 32;
+	static constexpr unsigned SELECT_TIMEOUT_MS = 100;
+
+	static ihwio_dev * client_get_dev(ClientInfo * client, dev_id_t devId);
 
 public:
 	std::vector<ihwio_bus *> buses;
-	Hwio_server(struct addrinfo * addr, std::vector<ihwio_bus *> buses);
+
+	using plugin_fn_t = std::function<void (ihwio_dev*, void *, void *)> ;
+	struct plugin_info_s {
+		plugin_fn_t fn;
+		size_t args_size;
+		size_t ret_size;
+	};
+	std::map<const std::string, plugin_info_s> plugins;
+	HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses);
 	void prepare_server_socket();
 	void handle_client_msgs(bool * run_server);
-	~Hwio_server();
+
+	// [TODO] plugin function should be restricted to device class by spec
+	template <typename ARGS_T, typename RET_T>
+	void install_plugin_fn(const std::string & name, void (*plugin_fn)(ihwio_dev* dev, ARGS_T * args, RET_T * ret)) {
+		plugin_info_s p;
+		p.fn =  [plugin_fn](ihwio_dev* a, void * b, void * c) {
+			plugin_fn(a, reinterpret_cast<ARGS_T*>(b), reinterpret_cast<RET_T*>(c));
+		};
+		if (std::is_same<ARGS_T, void>::value)
+			p.args_size = 0;
+		else
+			p.args_size = sizeof(ARGS_T);
+
+		if (std::is_same<RET_T, void>::value)
+			p.ret_size = 0;
+		else
+			p.ret_size = sizeof(RET_T);
+		plugins[name] = p;
+	}
+	~HwioServer();
 };
 
 }

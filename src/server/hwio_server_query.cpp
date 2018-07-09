@@ -4,7 +4,7 @@ using namespace std;
 using namespace hwio;
 
 
-vector<hwio_comp_spec> Hwio_server::extractSpecFromClientQuery(
+vector<hwio_comp_spec> HwioServer::extractSpecFromClientQuery(
 		DevQuery * q, int cnt) {
 	vector<hwio_comp_spec> spec;
 
@@ -35,7 +35,7 @@ void register_device_for_client() {
 
 }
 
-Hwio_server::PProcRes Hwio_server::device_lookup_resp(ClientInfo * client,
+HwioServer::PProcRes HwioServer::device_lookup_resp(ClientInfo * client,
 		DevQuery * q, int cnt, char tx_buffer[BUFFER_SIZE]) {
 	vector<hwio_comp_spec> spec = extractSpecFromClientQuery(q, cnt);
 	HwioFrame<DevQueryResp> * resp =

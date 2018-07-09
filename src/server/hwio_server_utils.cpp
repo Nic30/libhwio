@@ -3,7 +3,7 @@
 using namespace std;
 using namespace hwio;
 
-Hwio_server::PProcRes Hwio_server::send_err(int err_code, const string & msg) {
+HwioServer::PProcRes HwioServer::send_err(int err_code, const string & msg) {
 	HwioFrame<ErrMsg>* m = reinterpret_cast<HwioFrame<ErrMsg>*>(tx_buffer);
 	strncpy(m->body.msg, msg.c_str(), MAX_ERR_MSG_LEN);
 	m->body.err_code = err_code;
@@ -15,4 +15,11 @@ Hwio_server::PProcRes Hwio_server::send_err(int err_code, const string & msg) {
 #endif
 	// [TODO] use strlen to resolve real len
 	return PProcRes(true, sizeof(ErrMsg));
+}
+
+
+ihwio_dev * HwioServer::client_get_dev(ClientInfo * client, dev_id_t devId) {
+	if (devId < client->devices.size())
+		return client->devices.at(devId);
+	return nullptr;
 }

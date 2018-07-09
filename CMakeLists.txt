@@ -44,6 +44,7 @@ set(LIB_HWIO_SRC
 	./src/server/hwio_server_utils.cpp
 	./src/server/hwio_server_rw.cpp
 	./src/server/hwio_server_query.cpp
+	./src/server/hwio_server_remote_call.cpp
 	./src/hwio_comp_spec.cpp
 	./src/bus/hwio_bus_primitive.cpp
 	./src/bus/hwio_client_to_server_con.cpp

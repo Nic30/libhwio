@@ -44,8 +44,18 @@ struct PACKED RdReq {
 	uint16_t size;
 };
 
+struct PACKED RemoteCall {
+	dev_id_t dev_id;
+	uint8_t fn_name[MAX_NAME_LEN];
+	char args[0]; // arbitrary data size
+};
+
+struct PACKED RemoteCallRet {
+	uint8_t ret[0]; // arbitrary data size
+};
+
 struct PACKED RdResp {
-	char data[0];
+	char data[0]; // arbitrary data size
 };
 
 struct PACKED WrReq {
@@ -76,38 +86,38 @@ struct PACKED DevQueryResp {
 // Command codes used by hwio server
 enum HWIO_CMD {
 	HWIO_CMD_READ = 1,  // read from device
-	// 1B cmd, 1B device ID (has to be associated with this client)
-	// 4B addr
-	HWIO_CMD_READ_RESP = 2,
-	// 1B cmd
-	// 4B data
+	// HwioFrame<RdReq>
+	HWIO_CMD_READ_RESP = 2, // response with read data
+	// HwioFrame<RdResp>
 	HWIO_CMD_WRITE = 3,	// write to device
-	// 1B cmd, 1B device ID (has to be associated with this client)
-	// 4B addr, 4B data
+	// HwioFrame<WrReq>
 	HWIO_CMD_PING_REQUEST = 4,
 	// 1B cmd
 	HWIO_CMD_PING_REPLY = 5,
 	// 1B cmd
 	HWIO_CMD_QUERY = 6,	// query all devices available on server with compatibility list
-	// 1B cmd, 1B cnt
-	// 128B string for vendor, 128B string for type, 3x4B for version
+	// HwioFrame<DevQuery>
 	HWIO_CMD_QUERY_RESP = 7,	// response with device ids
-	// 1B cmd, 1B number of devices, nB device ID
+	// HwioFrame<DevQueryResp>
 	//  number of devices can be 0
 	HWIO_CMD_BYE = 8,	// client request to terminate connection
 	// 1B cmd
-	HWIO_CMD_MSG = 9
-// 1B cmd
-// 4B signed code
-// 1024B of err msg string
+	HWIO_CMD_MSG = 9,
+	// 1B cmd
+	// 4B signed code
+	// 1024B of err msg string
+	HWIO_REMOTE_CALL = 10,
+	// HwioFrame<RemoteCall>
+	HWIO_REMOTE_CALL_RET = 11,
+	// HwioFrame<RemoteCallRet>
 };
 
 // error codes for messages used by hwio server
-enum hwio_server_error {
+enum HWIO_SERVER_ERROR {
 	UNKNOWN_COMMAND = 1,
 	MALFORMED_PACKET = 2,
 	DEV_CNT_EXCEEDED = 3,
-	ACCESS_DENIGHT = 4,
+	ACCESS_DENIED = 4,
 	IO_ERROR = 5,
 };
 

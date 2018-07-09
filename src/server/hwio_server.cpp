@@ -8,15 +8,12 @@ using namespace std;
 using namespace hwio;
 
 
-Hwio_server::Hwio_server(struct addrinfo * addr, std::vector<ihwio_bus *> buses) :
+HwioServer::HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses) :
 		addr(addr), master_socket(-1), buses(buses) {
 	//addr->ai_flags = AI_PASSIVE;
 }
 
-const int Hwio_server::MAX_PENDING_CONNECTIONS = 32;
-const int Hwio_server::SELECT_TIMEOUT_MS = 100;
-
-void Hwio_server::prepare_server_socket() {
+void HwioServer::prepare_server_socket() {
 	struct sockaddr_in * addr = ((struct sockaddr_in *) this->addr->ai_addr);
 	int opt = true;
 	//create a master socket
@@ -58,7 +55,7 @@ void Hwio_server::prepare_server_socket() {
 
 }
 
-Hwio_server::PProcRes Hwio_server::handle_msg(ClientInfo * client,
+HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 		Hwio_packet_header header) {
 	ErrMsg * errM;
 	DevQuery * q;
@@ -74,6 +71,9 @@ Hwio_server::PProcRes Hwio_server::handle_msg(ClientInfo * client,
 
 	case HWIO_CMD_WRITE:
 		return handle_write(client, header);
+
+	case HWIO_REMOTE_CALL:
+		return handle_remote_call(client, header);
 
 	case HWIO_CMD_PING_REQUEST:
 		if (header.body_len != 0)
@@ -118,7 +118,7 @@ Hwio_server::PProcRes Hwio_server::handle_msg(ClientInfo * client,
 
 }
 
-ClientInfo * Hwio_server::add_new_client(int socket) {
+ClientInfo * HwioServer::add_new_client(int socket) {
 	int id = 0;
 	for (auto & client : clients) {
 		//if position is empty
@@ -137,7 +137,7 @@ ClientInfo * Hwio_server::add_new_client(int socket) {
 	return client;
 }
 
-void Hwio_server::handle_client_msgs(bool * run_server) {
+void HwioServer::handle_client_msgs(bool * run_server) {
 	//set of socket descriptors
 	fd_set readfds;
 	int max_sd;
@@ -200,7 +200,7 @@ void Hwio_server::handle_client_msgs(bool * run_server) {
 		}
 	}
 }
-void Hwio_server::handle_client_requests(fd_set * readfds) {
+void HwioServer::handle_client_requests(fd_set * readfds) {
 	// else its some IO operation on some other socket
 	for (ClientInfo * client : clients) {
 		if (client == nullptr)
@@ -252,7 +252,7 @@ void Hwio_server::handle_client_requests(fd_set * readfds) {
 	}
 }
 
-Hwio_server::~Hwio_server() {
+HwioServer::~HwioServer() {
 #ifdef LOG_INFO
 	LOG_INFO << "Hwio server shutting down" << std::endl;
 #endif

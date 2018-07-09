@@ -94,7 +94,7 @@ void hwio_device_remote::write(hwio_phys_addr_t offset, const void * data,
 	buff->header.command = HWIO_CMD_WRITE;
 	buff->body._.addr = offset;
 	buff->body._.devId = id;
-	buff->body._.size = id;
+	buff->body._.size = n;
 
 	memcpy(buff->body.data, data, n);
 	server->tx_pckt();
@@ -110,6 +110,7 @@ void hwio_device_remote::write64(hwio_phys_addr_t offset, uint64_t val) {
 }
 
 hwio_device_remote::~hwio_device_remote() {
+	// nothing is required, parent bus is closing connections
 }
 
 }

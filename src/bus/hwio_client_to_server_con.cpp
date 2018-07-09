@@ -117,6 +117,8 @@ hwio_client_to_server_con::~hwio_client_to_server_con() {
 		bye();
 		close(sockfd);
 	}
+	if (addr != nullptr)
+		freeaddrinfo(addr);
 }
 
 }

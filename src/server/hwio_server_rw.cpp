@@ -3,13 +3,7 @@
 using namespace std;
 using namespace hwio;
 
-ihwio_dev * client_get_dev(ClientInfo * client, dev_id_t devId) {
-	if (devId < client->devices.size())
-		return client->devices.at(devId);
-	return nullptr;
-}
-
-Hwio_server::PProcRes Hwio_server::handle_read(ClientInfo * client,
+HwioServer::PProcRes HwioServer::handle_read(ClientInfo * client,
 		Hwio_packet_header header) {
 	const RdReq* rdReq;
 
@@ -19,7 +13,7 @@ Hwio_server::PProcRes Hwio_server::handle_read(ClientInfo * client,
 	rdReq = reinterpret_cast<const RdReq*>(rx_buffer);
 	ihwio_dev * dev = client_get_dev(client, rdReq->devId);
 	if (!dev) {
-		return send_err(ACCESS_DENIGHT, "READ: device is not allocated");
+		return send_err(ACCESS_DENIED, "READ: device is not allocated");
 	}
 
 #ifdef LOG_INFO
@@ -38,7 +32,7 @@ Hwio_server::PProcRes Hwio_server::handle_read(ClientInfo * client,
 	return PProcRes(false, sizeof(resp->header) + rdReq->size);
 }
 
-Hwio_server::PProcRes Hwio_server::handle_write(ClientInfo * client,
+HwioServer::PProcRes HwioServer::handle_write(ClientInfo * client,
 		Hwio_packet_header header) {
 	stringstream ss;
 
@@ -56,7 +50,7 @@ Hwio_server::PProcRes Hwio_server::handle_write(ClientInfo * client,
 #endif
 	auto dev = client_get_dev(client, wrReq->_.devId);
 	if (!dev) {
-		return send_err(ACCESS_DENIGHT, "WRITE: device is not allocated");
+		return send_err(ACCESS_DENIED, "WRITE: device is not allocated");
 	}
 
 	dev->write(wrReq->_.addr, wrReq->data, wrReq->_.size);
