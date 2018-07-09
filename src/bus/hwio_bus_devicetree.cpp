@@ -299,7 +299,7 @@ DIR * hwio_bus_devicetree::go_up_next_dir(vector<char *> & path) {
 		next = go_next_dir(dir, path);
 		if (next == nullptr) {
 			closedir(dir);
-			return nullptr;
+			continue;
 		}
 
 		closedir(dir);
