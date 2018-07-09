@@ -24,6 +24,7 @@ void _test_version(struct hwio_version ver, int maj, int min, int sub, const cha
 }
 #define test_version(ver, maj, min, sub) _test_version((ver), (maj), (min), (sub), __func__, __FILE__, __LINE__)
 
+void spot_dev_mem_file();
 
 void test_hwio_comp_spec_all();
 void test_hwio_version_all();
