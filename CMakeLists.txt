@@ -55,6 +55,7 @@ set(LIB_HWIO_SRC
 find_package(LibXml2 REQUIRED)
 
 # define main library
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(hwio STATIC ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC})
 target_include_directories(hwio
 	PUBLIC ${LIBXML2_INCLUDE_DIR}
