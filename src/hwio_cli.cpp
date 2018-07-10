@@ -118,7 +118,7 @@ std::vector<ihwio_bus *> hwio_load_default_config() {
 			return hwio_config_load(name.c_str());
 	}
 	throw std::runtime_error(
-			"Hwio can not find any config file (~/.hwio_config.xml or /etc/hwio/default.xml)");
+			"Hwio can not find any config file (~/.hwio/config.xml or /etc/hwio/config.xml)");
 }
 
 void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
