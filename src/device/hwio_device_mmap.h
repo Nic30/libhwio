@@ -47,6 +47,9 @@ public:
 			hwio_phys_addr_t base_addr, hwio_phys_addr_t size,
 			const char * mem_path = DEFAULT_MEM_PATH);
 	virtual void name(const std::string & name) override;
+	virtual const std::string & name() override {
+		return ihwio_dev::name();
+	}
 
 	virtual void attach() override;
 	virtual const std::vector<hwio_comp_spec> & get_spec() const override;

@@ -13,13 +13,13 @@ namespace hwio {
  * */
 class hwio_bus_devicetree: public ihwio_bus {
 	const char * mem_path;
-	std::vector<char *> actual_path;
-	DIR *actual_dir = nullptr;
+	std::vector<char *> path_stack;
+	std::vector<DIR *> dir_stack;
+	bool top_dir_checked_for_dev;
 
 	hwio_device_mmap * device_next();
 	hwio_device_mmap * dev_from_dir(DIR *curr);
 	DIR * go_next_dir(DIR *curr, std::vector<char *> & path);
-	DIR * go_up_next_dir();
 
 	/**
 	 * @param fname name of file in actual path

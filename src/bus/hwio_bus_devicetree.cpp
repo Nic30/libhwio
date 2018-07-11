@@ -9,7 +9,6 @@
 #include <string.h>
 #include <assert.h>
 #include <regex.h>
-#include <iostream>
 
 using namespace std;
 namespace hwio {
@@ -25,18 +24,17 @@ const char * hwio_bus_devicetree::DEFAULT_DEVICE_TREE_PATH = "/proc/device-tree"
 char * hwio_bus_devicetree::file_path_from_stack(const char *fname) {
 	assert(fname != nullptr);
 
-	const size_t fnamelen = strlen(fname);
 	size_t plen = 0;
-
-	for (auto p : actual_path) {
+	for (auto p : path_stack) {
 		assert(p != nullptr);
 		plen += strlen((const char *) p) + 1;
 	}
 
+	const size_t fnamelen = strlen(fname);
 	char *full = (char *) malloc(plen + fnamelen + 1);
 
 	char *p = full;
-	for (auto frag : actual_path) {
+	for (auto frag : path_stack) {
 		const size_t flen = strlen((const char *) frag);
 
 		memcpy(p, frag, flen);
@@ -96,10 +94,13 @@ bool hwio_bus_devicetree::dir_has_file(DIR *curr, const char *fname) {
 		if (strcmp(d->d_name, fname))
 			continue;
 
-		if (path_is_file(fname))
+		if (path_is_file(fname)) {
+			rewinddir(curr);
 			return true;
+		}
 	}
 
+	rewinddir(curr);
 	return false;
 }
 
@@ -146,8 +147,8 @@ char *file_read(FILE *file, size_t *flen) {
 	return m;
 }
 
-void hwio_bus_devicetree::dev_parse_reg(const char *fname, hwio_phys_addr_t * base,
-		hwio_phys_addr_t * size) {
+void hwio_bus_devicetree::dev_parse_reg(const char *fname,
+		hwio_phys_addr_t * base, hwio_phys_addr_t * size) {
 	FILE *regf = path_fopen(fname, "r");
 	assert(regf != nullptr);
 
@@ -157,7 +158,7 @@ void hwio_bus_devicetree::dev_parse_reg(const char *fname, hwio_phys_addr_t * ba
 
 	// some devices can have reg file of different size because they have different size of address
 	if (length != 2 * sizeof(hwio_phys_addr_t)) {
-		free((void *) content);
+		delete [] content;
 		auto fp = file_path_from_stack(fname);
 		auto errmsg = std::string(
 				"Base and size has different size than expected ("
@@ -194,9 +195,9 @@ vector<char *> hwio_bus_devicetree::dev_parse_compat(const char *fname) {
 }
 
 hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr) {
-	assert(actual_path.size() > 1); // the root is never a device
+	assert(path_stack.size() > 1); // the root is never a device
 
-	char * name = actual_path.back();
+	char * name = path_stack.back();
 
 	vector<hwio_comp_spec> spec;
 	hwio_phys_addr_t base = 0, size = 0;
@@ -210,7 +211,7 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr) {
 			if (!strcmp(d->d_name, "reg"))
 				dev_parse_reg("reg", &base, &size);
 		} catch (const device_tree_format_err & err) {
-			std::cerr << "skipping" << actual_path[actual_path.size()-1] << std::endl;
+			rewinddir(curr);
 			return nullptr;
 		}
 
@@ -221,6 +222,7 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr) {
 			}
 		}
 	}
+	rewinddir(curr);
 
 	auto dev = new hwio_device_mmap(spec, base, size, mem_path);
 	dev->name(name);
@@ -231,36 +233,50 @@ hwio_bus_devicetree::hwio_bus_devicetree(const char * device_tree_path,
 		const char * mem_path) :
 		mem_path(mem_path) {
 
-	actual_dir = opendir(device_tree_path);
+	top_dir_checked_for_dev = false;
+	auto * actual_dir = opendir(device_tree_path);
 	if (actual_dir == nullptr)
-		throw device_tree_format_err("Can not open root device-tree folder");
-	actual_path.push_back(strdup(device_tree_path));
+		throw device_tree_format_err(
+				std::string("Can not open root device-tree folder:")
+						+ device_tree_path);
+	dir_stack.push_back(actual_dir);
+	path_stack.push_back(strdup(device_tree_path));
+
 	auto dev = device_next();
 	while (dev != nullptr) {
 		_all_devices.push_back(dev);
 		dev = device_next();
 	}
+	assert(dir_stack.size() == 0);
 
-	if (actual_dir != nullptr) {
-		closedir(actual_dir);
-		actual_dir = nullptr;
-	}
-
-	for (auto p : actual_path)
+	for (auto p : path_stack)
 		free(p);
-	actual_path.clear();
+
+	path_stack.clear();
 }
 
+/**
+ * Open directory from path stored in path stack and add it to dir_stack
+ **/
 DIR * hwio_bus_devicetree::opendir_on_stack() {
 	char *fpath = file_path_from_stack("");
 	DIR *dir = opendir(fpath);
-	free(fpath);
-	if (dir == nullptr)
-		throw device_tree_format_err("Can not open dir on stack");
 
+	if (dir == nullptr) {
+		std::string err_msg(std::string("Can not open dir on stack") + fpath);
+		free(fpath);
+		throw device_tree_format_err(err_msg);
+	} else {
+		free(fpath);
+	}
+
+	dir_stack.push_back(dir);
 	return dir;
 }
 
+/**
+ * Go to next directory in current directory
+ * */
 DIR * hwio_bus_devicetree::go_next_dir(DIR *curr) {
 	struct dirent *d;
 
@@ -272,72 +288,54 @@ DIR * hwio_bus_devicetree::go_next_dir(DIR *curr) {
 			break;
 	}
 	if (d != nullptr) {
-		actual_path.push_back(strdup(d->d_name));
+		top_dir_checked_for_dev = false;
+		path_stack.push_back(strdup(d->d_name));
 		return opendir_on_stack();
 	}
 	return nullptr;
 }
 
-DIR * hwio_bus_devicetree::go_up_next_dir() {
-	DIR *next = nullptr;
-
-	do {
-		if (actual_path.size() == 1) // never loose the root dir
-			return nullptr;
-
-		const char *dname = (const char *) actual_path.back();
-		actual_path.pop_back();
-
-		DIR *dir = opendir_on_stack();
-		if (dir == nullptr) {
-			free((void *) dname);
-			return nullptr;
-		}
-
-		struct dirent *d;
-		while ((d = readdir(dir)) != nullptr) {
-			if (!strcmp(d->d_name, dname))
-				break;
-		}
-		free((void *) dname);
-
-		next = go_next_dir(dir);
-		if (next == nullptr) {
-			closedir(dir);
-			continue;
-		}
-
-		closedir(dir);
-	} while (next == nullptr);
-
-	return next;
-}
-
+/**
+ * Iterator, Searches for another device in devicetree
+ *
+ * * preorder, depth-first, using dir_stack and recursion of device_next
+ *
+ **/
 hwio_device_mmap * hwio_bus_devicetree::device_next() {
-	if (actual_dir == nullptr)
+	if (dir_stack.size() == 0)
 		return nullptr;
 
-	hwio_device_mmap * dev = nullptr;
-
-	while (dev == nullptr && actual_dir != nullptr) {
-		if (dir_has_file(actual_dir,  "reg")) {
-			dev = dev_from_dir(actual_dir);
-
-			if (dev == nullptr)
-				return nullptr;
+	if (!top_dir_checked_for_dev) {
+		auto actual_dir = dir_stack.back();
+		top_dir_checked_for_dev = true;
+		if (dir_has_file(actual_dir, "reg")) {
+			// this dir can be device, try load it
+			auto dev = dev_from_dir(actual_dir);
+			rewinddir(actual_dir);
+			if (dev != nullptr)
+				return dev;
 		}
+		return device_next();
+	} else {
+		while (dir_stack.size() > 0) {
 
-		rewinddir(actual_dir);
-		DIR *dir = go_next_dir(actual_dir);
+			// this dir can contains devices, reset directory walking and, walk directories
+			DIR *dir = go_next_dir(dir_stack.back());
 
-		if (dir == nullptr)
-			dir = go_up_next_dir();
+			// if in directory is not any another directory return from it
+			if (dir == nullptr) {
+				closedir(dir_stack.back());
+				dir_stack.pop_back();
+				free(path_stack.back());
+				path_stack.pop_back();
+			}
+			// recursively
+			return device_next();
 
-		closedir(actual_dir);
-		actual_dir = dir;
+		}
 	}
 
-	return dev;
+	return nullptr;
 }
 
 vector<ihwio_dev *> hwio_bus_devicetree::find_devices(

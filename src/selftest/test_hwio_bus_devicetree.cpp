@@ -28,8 +28,17 @@ void test_devicetree_device_load() {
 	test_end();
 }
 
+void test_devicetree_device_load2() {
+	test_start();
+	hwio_bus_devicetree bus("test_samples/device-tree1_32b/device-tree/");
+	hwio_comp_spec dp("uprobe,dispather-1.0.a");
+	test_assert(bus.find_devices((dev_spec_t ) { dp }).size() == 2, "find by uprobe,dispather-1.0.a");
+	test_end();
+}
+
 void test_hwio_bus_devicetree_all() {
 	test_devicetree_device_load();
+	test_devicetree_device_load2();
 }
 
 }
