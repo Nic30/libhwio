@@ -6,7 +6,7 @@ from struct import pack, unpack, error
 
 
 SERVER_IP = '127.0.0.1'
-SERVER_PORT = 8890
+SERVER_PORT = 8896
 
 
 class HwioErr(Exception):
