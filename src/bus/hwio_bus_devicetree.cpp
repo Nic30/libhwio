@@ -162,8 +162,14 @@ void dev_parse_reg(path_ref_t path, const char *fname, hwio_phys_addr_t * base,
 
 	if (length != 2 * sizeof(uint64_t)) {
 		free((void *) content);
-		throw device_tree_format_err(
-				std::string("Base and size has different size than expected 32b/64b system problem in reg file of device ") + fname);
+		auto fp = file_path_from_stack(path, fname);
+		auto errmsg = std::string(
+				"Base and size has different size than expected ("
+						+ to_string(length) + " vs "
+						+ to_string(2 * sizeof(uint64_t))
+						+ "), 32b/64b system problem: ") + fp;
+		free(fp);
+		throw device_tree_format_err(errmsg);
 	}
 
 	*base = *((hwio_phys_addr_t*) content);
