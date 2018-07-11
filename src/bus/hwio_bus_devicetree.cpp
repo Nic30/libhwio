@@ -160,13 +160,13 @@ void dev_parse_reg(path_ref_t path, const char *fname, hwio_phys_addr_t * base,
 	const char *content = file_read(regf, &length);
 	fclose(regf);
 
-	if (length != 2 * sizeof(uint64_t)) {
+	if (length != 2 * sizeof(hwio_phys_addr_t)) {
 		free((void *) content);
 		auto fp = file_path_from_stack(path, fname);
 		auto errmsg = std::string(
 				"Base and size has different size than expected ("
 						+ to_string(length) + " vs "
-						+ to_string(2 * sizeof(uint64_t))
+						+ to_string(2 * sizeof(hwio_phys_addr_t))
 						+ "), 32b/64b system problem: ") + fp;
 		free(fp);
 		throw device_tree_format_err(errmsg);
