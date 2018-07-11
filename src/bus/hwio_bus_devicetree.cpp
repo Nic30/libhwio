@@ -161,8 +161,8 @@ void dev_parse_reg(path_ref_t path, const char *fname, hwio_phys_addr_t * base,
 	fclose(regf);
 
 	// some devices can have reg file of different size because they have different size of address
-	if (length >= 2 && (length % 2) == 0
-			&& length <= 2 * sizeof(hwio_phys_addr_t)) {
+	if (!(length >= 2 && (length % 2) == 0
+			&& length <= 2 * sizeof(hwio_phys_addr_t))) {
 		free((void *) content);
 		auto fp = file_path_from_stack(path, fname);
 		auto errmsg = std::string(
