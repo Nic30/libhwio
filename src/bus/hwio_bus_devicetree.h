@@ -17,9 +17,31 @@ class hwio_bus_devicetree: public ihwio_bus {
 	DIR *actual_dir = nullptr;
 
 	hwio_device_mmap * device_next();
-	hwio_device_mmap *dev_from_dir(DIR *curr, std::vector<char*> & path);
+	hwio_device_mmap * dev_from_dir(DIR *curr);
 	DIR * go_next_dir(DIR *curr, std::vector<char *> & path);
-	DIR * go_up_next_dir(std::vector<char *> & path);
+	DIR * go_up_next_dir();
+
+	/**
+	 * @param fname name of file in actual path
+	 * */
+	bool path_is_file(const char *fname);
+	/**
+	 * @param fname name of file in actual path
+	 * */
+	bool path_is_dir(const char *fname);
+	/**
+	 * @param fname name of file in actual path
+	 * */
+	bool dir_has_file(DIR *curr, const char *fname);
+
+	bool path_stat(const char *fname, struct stat *st);
+	char * file_path_from_stack(const char *fname);
+	FILE * path_fopen(const char *fname, const char *mode);
+	void dev_parse_reg(const char *fname, hwio_phys_addr_t * base,
+			hwio_phys_addr_t * size);
+	std::vector<char *> dev_parse_compat(const char *fname);
+	DIR * opendir_on_stack();
+	DIR * go_next_dir(DIR *curr);
 
 public:
 	std::vector<hwio_device_mmap *> _all_devices;
