@@ -12,7 +12,7 @@ namespace hwio {
 const char * hwio_client_to_server_con::DEFAULT_SERVER_ADDRESS = HWIO_DEFAULT_SERVER_ADDRESS;
 #else
 const char * hwio_client_to_server_con::DEFAULT_SERVER_ADDRESS =
-		"127.0.0.1:8890";
+		"127.0.0.1:8896";
 #endif
 
 const size_t hwio_client_to_server_con::DEV_TIMEOUT = 500000;
