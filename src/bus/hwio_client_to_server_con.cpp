@@ -37,7 +37,10 @@ void hwio_client_to_server_con::connect_to_server() {
 	int ret;
 	ret = connect(sockfd, addr->ai_addr, addr->ai_addrlen);
 	if (ret < 0) {
-		throw std::runtime_error("Can not connect to server");
+		throw std::runtime_error(
+				std::string(
+						"Can not connect to server: (error: " + strerror(ret)
+								+ ", address: " + orig_addr + " )"));
 	}
 
 	ret = ping();
