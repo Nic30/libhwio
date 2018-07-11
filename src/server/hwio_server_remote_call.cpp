@@ -27,7 +27,7 @@ HwioServer::PProcRes HwioServer::handle_remote_call(ClientInfo * client,
 #endif
 
 	auto resp = reinterpret_cast<HwioFrame<RemoteCallRet>*>(tx_buffer);
-	resp->header.command = HWIO_REMOTE_CALL_RET;
+	resp->header.command = HWIO_CMD_REMOTE_CALL_RET;
 	resp->header.body_len = plugin.ret_size;
 	try {
 		plugin.fn(dev, (void*)rc->args, (void*)resp->body.ret);

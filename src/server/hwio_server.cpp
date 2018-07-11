@@ -74,7 +74,7 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 	case HWIO_CMD_WRITE:
 		return handle_write(client, header);
 
-	case HWIO_REMOTE_CALL:
+	case HWIO_CMD_REMOTE_CALL:
 		return handle_remote_call(client, header);
 
 	case HWIO_CMD_PING_REQUEST:

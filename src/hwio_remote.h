@@ -106,9 +106,9 @@ enum HWIO_CMD {
 	// 1B cmd
 	// 4B signed code
 	// 1024B of err msg string
-	HWIO_REMOTE_CALL = 10,
+	HWIO_CMD_REMOTE_CALL = 10,
 	// HwioFrame<RemoteCall>
-	HWIO_REMOTE_CALL_RET = 11,
+	HWIO_CMD_REMOTE_CALL_RET = 11,
 	// HwioFrame<RemoteCallRet>
 };
 

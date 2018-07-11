@@ -31,7 +31,7 @@ public:
 	template <typename ARGS_T, typename RET_T>
 	RET_T remote_call(const char * fn_name, ARGS_T * args) {
 		auto buff = reinterpret_cast<HwioFrame<RemoteCall>*>(server->tx_buffer);
-		buff->header.command = HWIO_REMOTE_CALL;
+		buff->header.command = HWIO_CMD_REMOTE_CALL;
 		strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
 		buff->body.dev_id = id;
 
@@ -47,7 +47,7 @@ public:
 
 		Hwio_packet_header h;
 		server->rx_pckt(&h);
-		assert_response(&h, HWIO_REMOTE_CALL_RET,
+		assert_response(&h, HWIO_CMD_REMOTE_CALL_RET,
 				"Wrong response from server on read request ");
 
 		auto resp = reinterpret_cast<RemoteCallRet*>(server->rx_buffer);
