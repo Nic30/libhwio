@@ -161,8 +161,7 @@ void dev_parse_reg(path_ref_t path, const char *fname, hwio_phys_addr_t * base,
 	fclose(regf);
 
 	// some devices can have reg file of different size because they have different size of address
-	if (!(length >= 2 && (length % 2) == 0
-			&& length <= 2 * sizeof(hwio_phys_addr_t))) {
+	if (length != 2 * sizeof(hwio_phys_addr_t)) {
 		free((void *) content);
 		auto fp = file_path_from_stack(path, fname);
 		auto errmsg = std::string(
@@ -173,14 +172,8 @@ void dev_parse_reg(path_ref_t path, const char *fname, hwio_phys_addr_t * base,
 		throw device_tree_format_err(errmsg);
 	}
 
-	assert(sizeof(hwio_phys_addr_t) <= sizeof(uint64_t));
-
-	uint64_t mask = 0;
-	for (int i = 0; i < length / 2; i++)
-		mask |= 0xff << i;
-
-	*base = *((hwio_phys_addr_t*) content) & mask;
-	*size = *((hwio_phys_addr_t*) (content + (length / 2))) & mask;
+	*base = *((hwio_phys_addr_t*) content);
+	*size = *((hwio_phys_addr_t*) (content + (length / 2)));
 
 	delete[] content;
 }
@@ -219,8 +212,12 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr,
 		if (!path_is_file(path, d->d_name))
 			continue;
 
-		if (!strcmp(d->d_name, "reg"))
-			dev_parse_reg(path, "reg", &base, &size);
+		try {
+			if (!strcmp(d->d_name, "reg"))
+				dev_parse_reg(path, "reg", &base, &size);
+		} catch (const device_tree_format_err & err) {
+			return nullptr;
+		}
 
 		if (!strcmp(d->d_name, "compatible")) {
 			for (auto cs : dev_parse_compat(path, "compatible")) {
