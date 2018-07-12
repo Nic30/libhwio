@@ -71,7 +71,8 @@ HwioServer::PProcRes HwioServer::device_lookup_resp(ClientInfo * client,
 
 		if (log_level >= logDEBUG) {
 			std::cout << "[DEBUG] Client " << client->id << " now owns "
-					<< (int) dev_id << ": " << dev->name() << endl;
+					<< (int) dev_id << endl;
+			std::cout << dev->to_str() << std::endl;
 		}
 	}
 
