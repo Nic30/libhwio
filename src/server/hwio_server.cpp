@@ -7,7 +7,7 @@ using namespace std;
 using namespace hwio;
 
 HwioServer::HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses) :
-		addr(addr), master_socket(-1), buses(buses) {
+		addr(addr), master_socket(-1), log_level(logWARNING), buses(buses) {
 }
 
 void HwioServer::prepare_server_socket() {
@@ -51,9 +51,8 @@ void HwioServer::prepare_server_socket() {
 	poll_fds.push_back(pfd);
 
 	// now can accept the incoming connection
-#ifdef LOG_INFO
-	LOG_INFO << "Hwio server waiting for connections ..." << endl;
-#endif
+	if (log_level >= logDEBUG)
+		std::cout << "[DEBUG] Hwio server waiting for connections ..." << endl;
 
 }
 
@@ -104,17 +103,15 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 		return PProcRes(true, 0);
 
 	case HWIO_CMD_MSG:
-		std::cout << "HWIO_CMD_MSG" << std::endl;
-
 		errM = reinterpret_cast<ErrMsg*>(rx_buffer);
 		errM->msg[MAX_NAME_LEN - 1] = 0;
-#ifdef LOG_INFO
-		LOG_ERR << "code:" << errM->err_code << ": " << errM->msg << endl;
-#endif
+		if (log_level >= logERROR)
+			LOG_ERR << "code:" << errM->err_code << ": " << errM->msg << endl;
 		return PProcRes(false, 0);
 
 	default:
-		ss << "Unknown command " << cmd;
+		if (log_level >= logERROR)
+			LOG_ERR << "Unknown command " << cmd;
 		return send_err(UNKNOWN_COMMAND, ss.str());
 	}
 
@@ -152,7 +149,9 @@ void HwioServer::handle_client_msgs(bool * run_server) {
 		if (err == 0) {
 			continue;
 		} else if (err < 0) {
-			LOG_ERR << "poll error" << endl;
+			if (log_level >= logERROR)
+				LOG_ERR << "poll error" << endl;
+			continue;
 		}
 
 		// If something happened on the master socket,
@@ -170,11 +169,12 @@ void HwioServer::handle_client_msgs(bool * run_server) {
 						< 0)
 					throw runtime_error("error in accept for client socket");
 
-#ifdef LOG_INFO
-				//inform user of socket number - used in send and receive commands
-				LOG_INFO << "New connection, ip:" << inet_ntoa(address.sin_addr)
-				<< ", port:" << ntohs(address.sin_port) << endl;
-#endif
+				if (log_level >= logINFO) {
+					//inform user of socket number - used in send and receive commands
+					std::cout << "[INFO] New connection, ip:"
+							<< inet_ntoa(address.sin_addr) << ", port:"
+							<< ntohs(address.sin_port) << endl;
+				}
 				add_new_client(new_socket);
 			} else {
 				handle_client_requests(fd.fd);
@@ -188,8 +188,10 @@ void HwioServer::handle_client_requests(int sd) {
 	//incoming message
 	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(sd);
 	if (_client == fd_to_client.end())
-		throw std::runtime_error(std::string("fd_to_client does not know about socket for client on socket:")
-								 + to_string(sd));
+		throw std::runtime_error(
+				std::string(
+						"fd_to_client does not know about socket for client on socket:")
+						+ to_string(sd));
 
 	auto client = _client->second;
 	assert(client->fd == sd);
@@ -214,32 +216,33 @@ void HwioServer::handle_client_requests(int sd) {
 
 	if (respMeta.disconnect) {
 		//Somebody disconnected , get his details and print
-#ifdef LOG_INFO
-		LOG_INFO << "Client " << client->id << " disconnected" << endl;
+		if (log_level >= logINFO) {
+			std::cout << "[INFO] " << "Client " << client->id << " disconnected" << endl;
 
-		for (auto d : client->devices) {
-			LOG_INFO << "    owned device:" << endl;
-			for (auto & s : d->get_spec())
-			LOG_INFO << "        " << s.to_str() << endl;
+			for (auto d : client->devices) {
+				std::cout << "    owned device:" << endl;
+				for (auto & s : d->get_spec())
+					std::cout << "        " << s.to_str() << endl;
+			}
 		}
-#endif
 		// Close the socket and mark as 0 in list for reuse
 		// packet had wrong format or connection was disconnected.
 		clients[client->id] = nullptr;
 		fd_to_client.erase(sd);
 		poll_fds.erase(
-			std::remove_if(poll_fds.begin(), poll_fds.end(), [sd](struct pollfd item) {
-				return item.fd == sd;
-			}));
+				std::remove_if(poll_fds.begin(), poll_fds.end(),
+						[sd](struct pollfd item) {
+							return item.fd == sd;
+						}));
 		close(sd);
 		delete client;
 	}
 }
 
 HwioServer::~HwioServer() {
-#ifdef LOG_INFO
-	LOG_INFO << "Hwio server shutting down" << std::endl;
-#endif
+	if (log_level >= logINFO)
+		std::cout << "[INFO] Hwio server shutting down" << std::endl;
+
 	for (auto & c : clients) {
 		delete c;
 	}

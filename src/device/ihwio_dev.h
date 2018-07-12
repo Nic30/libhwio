@@ -179,6 +179,12 @@ public:
 		return _M_name;
 	}
 
+
+	/**
+	 * to string conversion for debug purposes
+	 ***/
+	virtual std::string to_str() = 0;
+
 	virtual ~ihwio_dev() {
 	}
 };

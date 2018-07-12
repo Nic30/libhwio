@@ -3,9 +3,8 @@
 using namespace std;
 using namespace hwio;
 
-
-vector<hwio_comp_spec> HwioServer::extractSpecFromClientQuery(
-		DevQuery * q, int cnt) {
+vector<hwio_comp_spec> HwioServer::extractSpecFromClientQuery(DevQuery * q,
+		int cnt) {
 	vector<hwio_comp_spec> spec;
 
 	for (Dev_query_item * item = q->items; item < q->items + cnt; ++item) {
@@ -70,15 +69,11 @@ HwioServer::PProcRes HwioServer::device_lookup_resp(ClientInfo * client,
 		resp->body.ids[i] = dev_id;
 		i++;
 
-#ifdef LOG_INFO
-		LOG_INFO << "Client " << client->id << " now owns " << (int) dev_id
-		<< ": " << endl;
-		for (auto & s: dev->get_spec()) {
-			LOG_INFO << "    " << s.to_str() << endl;
+		if (log_level >= logDEBUG) {
+			std::cout << "[DEBUG] Client " << client->id << " now owns "
+					<< (int) dev_id << ": " << dev->name() << endl;
 		}
-#endif
 	}
 
 	return PProcRes(false, sizeof(Hwio_packet_header) + resp->header.body_len);
-
 }

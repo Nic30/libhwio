@@ -47,7 +47,8 @@ void hwio_device_mmap::attach() {
 		fd = open(mem_file_name, O_RDWR);
 		if (fd <= 0) {
 			std::stringstream ss;
-			ss << "Can not open memory file: " << mem_file_name << ", " << strerror(errno);
+			ss << "Can not open memory file: " << mem_file_name << ", "
+					<< strerror(errno);
 			throw hwio_error_dev_init_fail(ss.str());
 		}
 		/* mmap the device into memory */
@@ -88,6 +89,22 @@ void hwio_device_mmap::write32(hwio_phys_addr_t offset, uint32_t val) {
 void hwio_device_mmap::write64(hwio_phys_addr_t offset, uint64_t val) {
 	char * addr = ((char *) dev_mem + page_offset + offset);
 	*((uint64_t *) addr) = val;
+}
+
+std::string hwio_device_mmap::to_str() {
+	std::stringstream ss;
+	const char * attached = (fd > 0 ? "yes" : "no");
+	ss << "hwio_device_mmap: (base: 0x" << std::hex << on_bus_base_addr
+			<< ", size:0x" << std::hex << on_bus_size << ", attached:"
+			<< attached << ", page:0x" << std::hex << page_addr
+			<< ", page_offset:0x" << std::hex << page_offset << ")"
+			<< std::endl;
+	ss << "    spec:" << std::endl;
+	for (auto & s : get_spec()) {
+		ss << "        " << s.to_str() << std::endl;
+	}
+
+	return ss.str();
 }
 
 hwio_device_mmap::~hwio_device_mmap() {

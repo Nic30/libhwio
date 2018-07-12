@@ -72,7 +72,9 @@ public:
 	virtual void write32(hwio_phys_addr_t offset, uint32_t val) override;
 	virtual void write64(hwio_phys_addr_t offset, uint64_t val) override;
 
+	virtual std::string to_str() override;
 	virtual ~hwio_device_remote() override;
+
 };
 
 }

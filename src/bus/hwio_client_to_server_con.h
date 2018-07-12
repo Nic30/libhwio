@@ -10,12 +10,11 @@ namespace hwio {
 
 class hwio_client_to_server_con {
 	int sockfd;
-	const char * orig_addr;
 	struct addrinfo * addr;
-
 	int rx_bytes(size_t size);
 
 public:
+	const char * orig_addr;
 	static const char * DEFAULT_SERVER_ADDRESS;
 	static const size_t DEV_TIMEOUT;
 

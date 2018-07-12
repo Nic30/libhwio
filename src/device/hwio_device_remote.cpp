@@ -109,6 +109,18 @@ void hwio_device_remote::write64(hwio_phys_addr_t offset, uint64_t val) {
 	write(offset, &val, sizeof(val));
 }
 
+
+std::string hwio_device_remote::to_str() {
+	std::stringstream ss;
+	ss << "hwio_device_remote: (server:" << server->orig_addr  << ", id:" << int(id) << ")" << std::endl;
+	ss << "    spec:" << std::endl;
+	for (auto & s : get_spec()) {
+		std::cout << "        " << s.to_str() << endl;
+	}
+
+	return ss.str();
+}
+
 hwio_device_remote::~hwio_device_remote() {
 	// nothing is required, parent bus is closing connections
 }

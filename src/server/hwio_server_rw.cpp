@@ -16,10 +16,10 @@ HwioServer::PProcRes HwioServer::handle_read(ClientInfo * client,
 		return send_err(ACCESS_DENIED, "READ: device is not allocated");
 	}
 
-#ifdef LOG_INFO
-	LOG_INFO << "READ:" << (int) rdReq->devId << " 0x" << hex << rdReq->addr
-	<< dec << endl;
-#endif
+	if (log_level >= logDEBUG) {
+		std::cout << "[DEBUG] READ:" << (int) rdReq->devId << " 0x" << hex
+				<< rdReq->addr << dec << endl;
+	}
 
 	HwioFrame<RdResp> * resp = reinterpret_cast<HwioFrame<RdResp>*>(tx_buffer);
 	resp->header.command = HWIO_CMD_READ_RESP;
@@ -43,11 +43,12 @@ HwioServer::PProcRes HwioServer::handle_write(ClientInfo * client,
 	if (wrReq->_.devId >= MAX_DEVICES)
 		return send_err(MALFORMED_PACKET, "WRITE: wrong device id");
 
-#ifdef LOG_INFO
-	LOG_INFO << "WRITE: client:" << client->id << ", dev:"
-	<< (int) wrReq->_.devId << " 0x" << hex << wrReq->_.addr << " "
-	<< dec << wrReq->data << endl;
-#endif
+	if (log_level >= logDEBUG) {
+		std::cout << "[DEBUG] WRITE: client:" << client->id << ", dev:"
+				<< (int) wrReq->_.devId << " 0x" << hex << wrReq->_.addr << " "
+				<< dec << wrReq->data << endl;
+	}
+
 	auto dev = client_get_dev(client, wrReq->_.devId);
 	if (!dev) {
 		return send_err(ACCESS_DENIED, "WRITE: device is not allocated");

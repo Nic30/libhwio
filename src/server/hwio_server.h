@@ -130,6 +130,10 @@ private:
 	static ihwio_dev * client_get_dev(ClientInfo * client, dev_id_t devId);
 
 public:
+
+	enum loglevel_e {logERROR=0, logWARNING=1, logINFO=2, logDEBUG=3};
+
+	enum loglevel_e log_level;
 	std::vector<ihwio_bus *> buses;
 
 	using plugin_fn_t = std::function<void (ihwio_dev*, void *, void *)> ;
