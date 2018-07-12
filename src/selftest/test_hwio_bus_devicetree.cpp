@@ -13,7 +13,12 @@ void test_devicetree_device_load() {
 	test_assert(bus._all_devices.size() == 8, "All devices loaded");
 
 	hwio_comp_spec serial0("xlnx,xps-uartlite-1.1.97");
-	test_assert(bus.find_devices((dev_spec_t ) { serial0 }).size() == 2, "find by xlnx,xps-uartlite-1.1.97");
+	auto s0 = bus.find_devices((dev_spec_t ) { serial0 });
+	test_assert(s0.size() == 2, "find by xlnx,xps-uartlite-1.1.97");
+	auto s0_base = dynamic_cast<hwio_device_mmap*>(s0.at(0))->on_bus_base_addr;
+	auto s1_base = dynamic_cast<hwio_device_mmap*>(s0.at(1))->on_bus_base_addr;
+	test_assert(s1_base == 0x84000000, "correct address of serial 0x84000000");
+	test_assert(s0_base == 0x88000000, "correct address of serial 0x88000000");
 
 	hwio_comp_spec serial1("xlnx,xps-uartlite-1.0.97");
 	test_assert(bus.find_devices((dev_spec_t ) { serial1 }).size() == 2, "find by xlnx,xps-uartlite-1.0.97");

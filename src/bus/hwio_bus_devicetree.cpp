@@ -147,6 +147,17 @@ char *file_read(FILE *file, size_t *flen) {
 	return m;
 }
 
+template<typename T>
+void reverse_endianity(T & val) {
+	T tmp = 0;
+	for (unsigned i = 0; i < sizeof(T); i++) {
+		tmp <<= 8;
+		tmp |= val & 0xff;
+		val >>= 8;
+	}
+	val = tmp;
+}
+
 void hwio_bus_devicetree::dev_parse_reg(const char *fname,
 		hwio_phys_addr_t * base, hwio_phys_addr_t * size) {
 	FILE *regf = path_fopen(fname, "r");
@@ -170,6 +181,9 @@ void hwio_bus_devicetree::dev_parse_reg(const char *fname,
 
 	*base = *((hwio_phys_addr_t*) content);
 	*size = *((hwio_phys_addr_t*) (content + (length / 2)));
+
+	reverse_endianity<hwio_phys_addr_t>(*base);
+	reverse_endianity<hwio_phys_addr_t>(*size);
 
 	delete[] content;
 }
