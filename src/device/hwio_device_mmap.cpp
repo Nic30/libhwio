@@ -24,10 +24,10 @@ hwio_device_mmap::hwio_device_mmap(std::vector<hwio_comp_spec> spec,
 	if (s < page_size)
 		s = page_size;
 	if (s > s / page_size)
-		s = ((s / page_size) + 1) * page_size;
+		s += page_size;
 	addr_space_size = s;
 
-	dev_mem = (void*) -1;
+	dev_mem = MAP_FAILED;
 	fd = -1;
 	// page has to be mmaped from the beginning, do address alignment
 	page_addr = (base_addr & (~(page_size - 1)));
@@ -55,7 +55,7 @@ void hwio_device_mmap::attach() {
 		dev_mem = mmap(NULL, addr_space_size, PROT_READ | PROT_WRITE,
 		MAP_SHARED, fd, page_addr);
 
-		if (dev_mem == (void*) -1)
+		if (dev_mem == MAP_FAILED)
 			throw hwio_error_dev_init_fail("Can not mmap memory");
 	}
 }
