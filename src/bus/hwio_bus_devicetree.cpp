@@ -9,6 +9,7 @@
 #include <string.h>
 #include <assert.h>
 #include <regex.h>
+#include <algorithm>    // std::sort
 
 using namespace std;
 namespace hwio {
