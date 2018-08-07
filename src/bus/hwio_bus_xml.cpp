@@ -23,7 +23,7 @@ hwio_comp_spec parse_xml_compatible(xmlDoc * doc, xmlNode * cur) {
  *   XML attribute (one of `version', `name', `index', `base' or `size').
  */
 hwio_device_mmap * parse_xml_device(xmlDoc * doc, xmlNode * src,
-		hwio_phys_addr_t offset, const char * mem_file_path) {
+		hwio_phys_addr_t offset, const std::string & mem_file_path) {
 	xmlChar *name = xmlGetProp(src, (const xmlChar *) "name");
 	xmlChar *base = xmlGetProp(src, (const xmlChar *) "base");
 	xmlChar *size = xmlGetProp(src, (const xmlChar *) "size");
@@ -75,9 +75,9 @@ void hwio_bus_xml::load_devices(xmlDoc * doc) {
 	auto root = xmlDocGetRootElement(doc);
 	if (xmlStrcmp(root->name, (const xmlChar *) "devicetree") == 0) {
 		xmlChar *memfile = xmlGetProp(root, (const xmlChar *) "memfile");
-		const char * mem_file = hwio_device_mmap::DEFAULT_MEM_PATH;
+		std::string mem_file = hwio_device_mmap::DEFAULT_MEM_PATH;
 		if (memfile != nullptr)
-			mem_file = (const char *) xmlStrdup(memfile);
+			mem_file = (char *) memfile;
 
 		xmlChar *offset_str = xmlGetProp(root, (const xmlChar *) "offset");
 		hwio_phys_addr_t offset = 0;

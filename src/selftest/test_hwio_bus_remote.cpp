@@ -32,6 +32,7 @@ void spot_dev_mem_file() {
 	auto buff = new uint8_t[s];
 	std::fill(buff, &buff[s], 0);
 	mem.write((const char *)buff, s);
+	delete [] buff;
 }
 
 void run_server() {
@@ -88,6 +89,7 @@ void run_server_with_plugins0() {
 
 	server.prepare_server_socket();
 	server.handle_client_msgs(&run_server_flag);
+	freeaddrinfo(addr);
 }
 
 

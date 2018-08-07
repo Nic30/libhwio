@@ -17,6 +17,9 @@ namespace hwio {
  * Device mmaped from /dev/mem or other file
  * */
 class hwio_device_mmap: public ihwio_dev {
+	// name of file from which device should be mmaped
+	const std::string mem_file_name;
+
 	// informations about device
 	std::vector<hwio_comp_spec> spec;
 
@@ -29,23 +32,21 @@ class hwio_device_mmap: public ihwio_dev {
 	// pointer on mmaped device memory
 	void *dev_mem;
 
-	// name of file from which device should be mmaped
-	const char * mem_file_name;
 
 public:
 	// base address and size of device from bus
 	const hwio_phys_addr_t on_bus_base_addr;
 	const hwio_phys_addr_t on_bus_size;
-	static const char * DEFAULT_MEM_PATH;
+	static const std::string DEFAULT_MEM_PATH;
 	/*
 	 * @param devI base address where address space of device starts
 	 **/
 	hwio_device_mmap(const hwio_device_mmap & other) = delete;
 	hwio_device_mmap(hwio_comp_spec spec, hwio_phys_addr_t base_addr,
-			hwio_phys_addr_t size, const char * mem_path = DEFAULT_MEM_PATH);
+			hwio_phys_addr_t size, const std::string & mem_path = DEFAULT_MEM_PATH);
 	hwio_device_mmap(std::vector<hwio_comp_spec> spec,
 			hwio_phys_addr_t base_addr, hwio_phys_addr_t size,
-			const char * mem_path = DEFAULT_MEM_PATH);
+			const std::string & mem_path = DEFAULT_MEM_PATH);
 	virtual void name(const std::string & name) override;
 	virtual const std::string & name() override {
 		return ihwio_dev::name();

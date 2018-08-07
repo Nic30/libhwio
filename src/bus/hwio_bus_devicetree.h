@@ -12,7 +12,7 @@ namespace hwio {
  * Bus with devices generated from device-tree
  * */
 class hwio_bus_devicetree: public ihwio_bus {
-	const char * mem_path;
+	const std::string mem_path;
 	std::vector<char *> path_stack;
 	std::vector<DIR *> dir_stack;
 	bool top_dir_checked_for_dev;
@@ -46,11 +46,11 @@ class hwio_bus_devicetree: public ihwio_bus {
 public:
 	std::vector<hwio_device_mmap *> _all_devices;
 
-	static const char * DEFAULT_DEVICE_TREE_PATH;
+	static const std::string DEFAULT_DEVICE_TREE_PATH;
 
 	hwio_bus_devicetree(
-			const char * device_tree_path = DEFAULT_DEVICE_TREE_PATH,
-			const char * mem_path = hwio_device_mmap::DEFAULT_MEM_PATH);
+			const std::string & device_tree_path = DEFAULT_DEVICE_TREE_PATH,
+			const std::string & mem_path = hwio_device_mmap::DEFAULT_MEM_PATH);
 
 	virtual std::vector<ihwio_dev *> find_devices(
 			const std::vector<hwio_comp_spec> & spec) override;

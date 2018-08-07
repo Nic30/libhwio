@@ -20,7 +20,7 @@ class device_tree_format_err: public runtime_error {
 	using runtime_error::runtime_error;
 };
 
-const char * hwio_bus_devicetree::DEFAULT_DEVICE_TREE_PATH = "/proc/device-tree";
+const std::string hwio_bus_devicetree::DEFAULT_DEVICE_TREE_PATH = "/proc/device-tree";
 
 char * hwio_bus_devicetree::file_path_from_stack(const char *fname) {
 	assert(fname != nullptr);
@@ -250,18 +250,18 @@ bool devNameCmp(ihwio_dev * a, ihwio_dev * b) {
 	return a->name().compare(b->name()) >= 0;
 }
 
-hwio_bus_devicetree::hwio_bus_devicetree(const char * device_tree_path,
-		const char * mem_path) :
+hwio_bus_devicetree::hwio_bus_devicetree(const std::string & device_tree_path,
+		const std::string & mem_path) :
 		mem_path(mem_path) {
 
 	top_dir_checked_for_dev = false;
-	auto * actual_dir = opendir(device_tree_path);
+	auto * actual_dir = opendir(device_tree_path.c_str());
 	if (actual_dir == nullptr)
 		throw device_tree_format_err(
 				std::string("Can not open root device-tree folder:")
 						+ device_tree_path);
 	dir_stack.push_back(actual_dir);
-	path_stack.push_back(strdup(device_tree_path));
+	path_stack.push_back(strdup(device_tree_path.c_str()));
 
 	auto dev = device_next();
 	while (dev != nullptr) {

@@ -5,18 +5,18 @@
 
 namespace hwio {
 
-const char * hwio_device_mmap::DEFAULT_MEM_PATH = "/dev/mem";
+const std::string hwio_device_mmap::DEFAULT_MEM_PATH = "/dev/mem";
 
 hwio_device_mmap::hwio_device_mmap(hwio_comp_spec spec,
 		hwio_phys_addr_t base_addr, hwio_phys_addr_t size,
-		const char * mem_path) :
+		const std::string & mem_path) :
 		hwio_device_mmap((std::vector<hwio_comp_spec> ) { spec }, base_addr,
 				size) {
 }
 
 hwio_device_mmap::hwio_device_mmap(std::vector<hwio_comp_spec> spec,
 		hwio_phys_addr_t base_addr, hwio_phys_addr_t size,
-		const char * mem_file_name) :
+		const std::string & mem_file_name) : mem_file_name(mem_file_name),
 		spec(spec), on_bus_base_addr(base_addr), on_bus_size(size) {
 	unsigned page_size = sysconf(_SC_PAGESIZE);
 	// round up addr space size
@@ -32,7 +32,6 @@ hwio_device_mmap::hwio_device_mmap(std::vector<hwio_comp_spec> spec,
 	// page has to be mmaped from the beginning, do address alignment
 	page_addr = (base_addr & (~(page_size - 1)));
 	page_offset = base_addr - page_addr;
-	this->mem_file_name = mem_file_name;
 }
 
 void hwio_device_mmap::name(const std::string & name) {
@@ -44,7 +43,7 @@ void hwio_device_mmap::name(const std::string & name) {
 
 void hwio_device_mmap::attach() {
 	if (fd < 0) {
-		fd = open(mem_file_name, O_RDWR);
+		fd = open(mem_file_name.c_str(), O_RDWR);
 		if (fd <= 0) {
 			std::stringstream ss;
 			ss << "Can not open memory file: " << mem_file_name << ", "
