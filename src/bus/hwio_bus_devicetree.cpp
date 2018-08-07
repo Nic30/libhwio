@@ -243,6 +243,10 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr) {
 	return dev;
 }
 
+bool devNameCmp(ihwio_dev * a, ihwio_dev * b) {
+	return a->name().compare(b->name());
+}
+
 hwio_bus_devicetree::hwio_bus_devicetree(const char * device_tree_path,
 		const char * mem_path) :
 		mem_path(mem_path) {
@@ -267,6 +271,8 @@ hwio_bus_devicetree::hwio_bus_devicetree(const char * device_tree_path,
 		free(p);
 
 	path_stack.clear();
+
+	std::sort(_all_devices.begin(), _all_devices.end(), devNameCmp);
 }
 
 /**
