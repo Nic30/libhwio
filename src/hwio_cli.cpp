@@ -122,7 +122,6 @@ std::vector<ihwio_bus *> hwio_load_default_config() {
 }
 
 void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
-
 	// build names of options
 	std::vector<int> consumed_args;
 	std::vector<std::string> reducible_args;
@@ -154,14 +153,14 @@ void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 	argc -= consumed_args.size();
 }
 
-char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_delete) {
+char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_free) {
 	char ** _argv = (char **) malloc(argc* sizeof(char *));
-	to_delete.push_back((void*) _argv);
 	for (int i = 0; i < argc; i++) {
 		auto tmp =  strdup(argv[i]);
 		_argv[i] = tmp;
-		to_delete.push_back((void*)tmp);
+		to_free.push_back((void*)tmp);
 	}
+	to_free.push_back((void*) _argv);
 	return _argv;
 }
 
@@ -177,8 +176,8 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 			};
 
 	// copy argv because options will be removed
-	std::vector<void *> to_delete;
-	char ** _argv = copy_argv(argc, argv, to_delete);
+	std::vector<void *> to_free;
+	char ** _argv = copy_argv(argc, argv, to_free);
 	std::vector<ihwio_bus *> buses;
 	const char * hwio_devicetree = nullptr;
 	const char * hwio_device_mem = nullptr;
@@ -238,7 +237,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	} catch (const std::exception & e) {
 		opterr = original_opterr;
 		optind = 0;
-		for (auto o: to_delete) {
+		for (auto o: to_free) {
 			free(o);
 		}
 		throw e;
@@ -246,7 +245,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	// put back original state of getopt
 	opterr = original_opterr;
 	optind = 0;
-	for (auto o: to_delete) {
+	for (auto o: to_free) {
 		free(o);
 	}
 
