@@ -238,14 +238,16 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr) {
 		}
 	}
 	rewinddir(curr);
-
+	assert(name != nullptr);
 	auto dev = new hwio_device_mmap(spec, base, size, mem_path);
 	dev->name(name);
 	return dev;
 }
 
 bool devNameCmp(ihwio_dev * a, ihwio_dev * b) {
-	return a->name().compare(b->name());
+	assert(a != nullptr);
+	assert(b != nullptr);
+	return a->name().compare(b->name()) >= 0;
 }
 
 hwio_bus_devicetree::hwio_bus_devicetree(const char * device_tree_path,
