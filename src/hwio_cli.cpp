@@ -13,7 +13,7 @@
 namespace hwio {
 
 const char * hwio_help_str() {
-	return "HWIO " HWIO_VERSION " params:\n" //
+	return "HWIO " HWIO_VERSION "(build " __TIMESTAMP__ ") params:\n" //
 	"   if no configuration file is specified ~/.hwio/config.xml is used, if it does not exists /etc/hwio/config.xml is used\n"//
 	"   --hwio_config <path.xml>   load hwio configuration from xml file\n"//
 	"   --hwio_devicetree <path>   root of devicetree to load device info from (def. \"/proc/device-tree\")\n"//
@@ -154,6 +154,18 @@ void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 	argc -= consumed_args.size();
 }
 
+char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_delete) {
+	char ** _argv = (char **) malloc(argc* sizeof(char *));
+	to_delete.push_back((void*) _argv);
+	for (int i = 0; i < argc; i++) {
+		auto tmp =  strdup(argv[i]);
+		_argv[i] = tmp;
+		to_delete.push_back((void*)tmp);
+	}
+	return _argv;
+}
+
+
 ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	const option long_opts[] = { //
 			{ "hwio_config", required_argument, nullptr, 'c' },     //
@@ -164,6 +176,9 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 					{ nullptr, no_argument, nullptr, 0 }                    //
 			};
 
+	// copy argv because options will be removed
+	std::vector<void *> to_delete;
+	char ** _argv = copy_argv(argc, argv, to_delete);
 	std::vector<ihwio_bus *> buses;
 	const char * hwio_devicetree = nullptr;
 	const char * hwio_device_mem = nullptr;
@@ -173,7 +188,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	opterr = 0;
 	try {
 		while (true) {
-			const auto opt = getopt_long(argc, argv, "", long_opts, nullptr);
+			const auto opt = getopt_long(argc, _argv, "", long_opts, nullptr);
 			ihwio_bus * bus = nullptr;
 			if (-1 == opt)
 				break;
@@ -222,12 +237,18 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 		}
 	} catch (const std::exception & e) {
 		opterr = original_opterr;
-		optind = 1;
+		optind = 0;
+		for (auto o: to_delete) {
+			free(o);
+		}
 		throw e;
 	}
 	// put back original state of getopt
 	opterr = original_opterr;
-	optind = 1;
+	optind = 0;
+	for (auto o: to_delete) {
+		free(o);
+	}
 
 	// consume potential leftover
 	if (hwio_devicetree != nullptr) {
