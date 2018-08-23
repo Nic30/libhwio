@@ -50,7 +50,8 @@ HwioServer::PProcRes HwioServer::device_lookup_resp(ClientInfo * client,
 
 			if (cdev == nullptr && firts_empty < 0) {
 				firts_empty = dev_id;
-				break;
+				// we can not break because we need to search
+				// if divece is already in client devices
 			}
 
 			dev_id++;
