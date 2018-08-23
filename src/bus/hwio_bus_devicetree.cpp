@@ -244,10 +244,13 @@ hwio_device_mmap *hwio_bus_devicetree::dev_from_dir(DIR *curr) {
 	return dev;
 }
 
-bool devNameCmp(ihwio_dev * a, ihwio_dev * b) {
-	assert(a != nullptr);
-	assert(b != nullptr);
-	return a->name().compare(b->name()) >= 0;
+bool devAddrCmp(ihwio_dev * a, ihwio_dev * b) {
+	hwio_device_mmap * _a = dynamic_cast<hwio_device_mmap *>(a);
+	hwio_device_mmap * _b = dynamic_cast<hwio_device_mmap *>(b);
+
+	assert(_a != nullptr);
+	assert(_b != nullptr);
+	return _a->on_bus_base_addr < _b->on_bus_base_addr;
 }
 
 hwio_bus_devicetree::hwio_bus_devicetree(const std::string & device_tree_path,
@@ -275,7 +278,7 @@ hwio_bus_devicetree::hwio_bus_devicetree(const std::string & device_tree_path,
 
 	path_stack.clear();
 
-	std::sort(_all_devices.begin(), _all_devices.end(), devNameCmp);
+	std::sort(_all_devices.begin(), _all_devices.end(), devAddrCmp);
 }
 
 /**

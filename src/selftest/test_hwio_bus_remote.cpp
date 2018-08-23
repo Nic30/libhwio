@@ -166,8 +166,8 @@ void test_remote_device_load() {
 		auto bus = make_unique<hwio_bus_remote>(server_addr);
 
 		hwio_comp_spec serial0("xlnx,xps-uartlite-1.1.97");
-		test_assert(bus->find_devices((dev_spec_t ) { serial0 }).size() == 2,
-				"find by xlnx,xps-uartlite-1.1.97");
+		auto serialDevs = bus->find_devices((dev_spec_t ) { serial0 });
+		test_assert(serialDevs.size() == 2, "find by xlnx,xps-uartlite-1.1.97");
 		hwio_comp_spec serial1("xlnx,xps-uartlite-1.0.97");
 		dev_spec_t spec = { serial1 };
 		test_assert(bus->find_devices(spec).size() == 2,
