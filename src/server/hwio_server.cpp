@@ -17,7 +17,7 @@ void HwioServer::prepare_server_socket() {
 	if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
 		std::stringstream errss;
 		errss << "hwio_server socket failed: " << gai_strerror(master_socket);
-		throw std::runtime_error(errss.str());
+		throw std::runtime_error(std::string("[HWIO, server]") + errss.str());
 	}
 
 	// set master socket to allow multiple connections ,
@@ -28,21 +28,21 @@ void HwioServer::prepare_server_socket() {
 		std::stringstream errss;
 		errss << "hwio_server setsockopt failed: "
 				<< gai_strerror(master_socket);
-		throw std::runtime_error(errss.str());
+		throw std::runtime_error(std::string("[HWIO, server]") + errss.str());
 	}
 	//bind the socket
 	err = bind(master_socket, (sockaddr *) addr, sizeof(*addr));
 	if (err < 0) {
 		std::stringstream errss;
 		errss << "hwio_server bind failed: " << gai_strerror(err);
-		throw std::runtime_error(errss.str());
+		throw std::runtime_error(std::string("[HWIO, server]") + errss.str());
 	}
 
 	err = listen(master_socket, MAX_PENDING_CONNECTIONS);
 	if (err < 0) {
 		std::stringstream errss;
 		errss << "hwio_server listen failed: " << gai_strerror(err);
-		throw std::runtime_error(errss.str());
+		throw std::runtime_error(std::string("[HWIO, server]") + errss.str());
 	}
 
 	struct pollfd pfd;
@@ -190,7 +190,7 @@ void HwioServer::handle_client_requests(int sd) {
 	if (_client == fd_to_client.end())
 		throw std::runtime_error(
 				std::string(
-						"fd_to_client does not know about socket for client on socket:")
+						"[HWIO, server] fd_to_client does not know about socket for client on socket:")
 						+ to_string(sd));
 
 	auto client = _client->second;
@@ -215,7 +215,7 @@ void HwioServer::handle_client_requests(int sd) {
 			respMeta = handle_msg(client, header);
 			if (respMeta.tx_size) {
 				if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
-					throw std::runtime_error("Can not send response on client msg");
+					throw std::runtime_error("[HWIO, server] Can not send response on client msg");
 				}
 			}
 		}

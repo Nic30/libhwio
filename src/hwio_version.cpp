@@ -70,7 +70,7 @@ hwio_version::hwio_version(const std::string & version_str) {
 			subminor = HWIO_VERSION_NA;
 		}
 	} else
-		throw std::runtime_error("Wrong hwio_version format");
+		throw std::runtime_error("[HWIO] Wrong hwio_version format");
 }
 
 }

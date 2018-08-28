@@ -25,7 +25,7 @@ hwio_client_to_server_con::hwio_client_to_server_con(const char *host) :
 void hwio_client_to_server_con::connect_to_server() {
 	sockfd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 	if (sockfd < 0) {
-		throw std::runtime_error("Can not create a socket");
+		throw std::runtime_error("[HWIO] Can not create a socket");
 	}
 
 	// set timeout on socket
@@ -39,13 +39,13 @@ void hwio_client_to_server_con::connect_to_server() {
 	if (ret < 0) {
 		throw std::runtime_error(
 				std::string(
-						"Can not connect to server: (error: ") + strerror(ret)
+						"[HWIO] Can not connect to server: (error: ") + strerror(ret)
 								+ ", address: " + orig_addr + " )");
 	}
 
 	ret = ping();
 	if (ret < 0) {
-		throw std::runtime_error("Initial ping to server has failed");
+		throw std::runtime_error("[HWIO] Initial ping to server has failed");
 	}
 }
 

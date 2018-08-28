@@ -57,7 +57,7 @@ std::vector<ihwio_dev *> hwio_bus_remote::find_devices(
 	std::vector<ihwio_dev *> res;
 
 	if (h.command != HWIO_CMD_QUERY_RESP)
-		throw std::runtime_error("Wrong response on device query");
+		throw std::runtime_error("[HWIO, remote bus] Wrong response on device query");
 
 	auto items = reinterpret_cast<DevQueryResp*>(server.rx_buffer);
 

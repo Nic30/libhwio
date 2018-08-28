@@ -55,7 +55,7 @@ struct addrinfo * parse_ip_and_port(const std::string & host) {
 	error = getaddrinfo(_ip, _port, &hints, &res);
 
 	if (error || res == nullptr)
-		throw std::runtime_error(gai_strerror(error));
+		throw std::runtime_error(std::string("[HWIO] ") + gai_strerror(error));
 	else {
 		return res;
 	}

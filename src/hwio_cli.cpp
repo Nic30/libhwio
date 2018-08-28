@@ -118,7 +118,7 @@ std::vector<ihwio_bus *> hwio_load_default_config() {
 			return hwio_config_load(name.c_str());
 	}
 	throw std::runtime_error(
-			"Hwio can not find any config file (~/.hwio/config.xml or /etc/hwio/config.xml)");
+			"[HWIO, cli] can not find any config file (~/.hwio/config.xml or /etc/hwio/config.xml)");
 }
 
 void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
@@ -265,7 +265,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 			buses.push_back(b);
 
 	if (buses.size() == 0)
-		throw std::runtime_error("hwio does not have any bus specified");
+		throw std::runtime_error("[HWIO, cli] does not have any bus specified");
 	else if (buses.size() > 1)
 		assert(false && "[TODO] merge buses into composite bus");
 
