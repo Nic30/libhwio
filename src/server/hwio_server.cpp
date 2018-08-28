@@ -202,14 +202,21 @@ void HwioServer::handle_client_requests(int sd) {
 	if ((rx_data_size = read(sd, &header, sizeof(Hwio_packet_header))) == 0) {
 		respMeta = send_err(MALFORMED_PACKET, "No command received");
 	} else {
+		bool err = false;
 		if (header.body_len) {
-			if ((rx_data_size = read(sd, rx_buffer, header.body_len)) == 0)
-				respMeta = send_err(MALFORMED_PACKET, "Wrong frame body");
+			if ((rx_data_size = read(sd, rx_buffer, header.body_len)) == 0) {
+				respMeta = send_err(MALFORMED_PACKET,
+						std::string("Wrong frame body (expectedSize=" + std::to_string(int(header.body_len))
+									+ " got="+ std::to_string(rx_data_size)));
+				err = true;
+			}
 		}
-		respMeta = handle_msg(client, header);
-		if (respMeta.tx_size) {
-			if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
-				throw std::runtime_error("Can not send response on client msg");
+		if (!err) {
+			respMeta = handle_msg(client, header);
+			if (respMeta.tx_size) {
+				if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
+					throw std::runtime_error("Can not send response on client msg");
+				}
 			}
 		}
 	}
