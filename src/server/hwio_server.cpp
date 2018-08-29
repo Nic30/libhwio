@@ -114,7 +114,6 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 			LOG_ERR << "Unknown command " << cmd;
 		return send_err(UNKNOWN_COMMAND, ss.str());
 	}
-
 }
 
 ClientInfo * HwioServer::add_new_client(int socket) {
@@ -222,7 +221,8 @@ void HwioServer::handle_client_requests(int sd) {
 	}
 
 	if (respMeta.disconnect) {
-		//Somebody disconnected , get his details and print
+		// Somebody disconnected, get his details and print
+		// packet had wrong format or connection was disconnected.
 		if (log_level >= logINFO) {
 			std::cout << "[INFO] " << "Client " << client->id << " disconnected" << endl;
 
@@ -232,8 +232,6 @@ void HwioServer::handle_client_requests(int sd) {
 					std::cout << "        " << s.to_str() << endl;
 			}
 		}
-		// Close the socket and mark as 0 in list for reuse
-		// packet had wrong format or connection was disconnected.
 		clients[client->id] = nullptr;
 		fd_to_client.erase(sd);
 		poll_fds.erase(
@@ -241,7 +239,7 @@ void HwioServer::handle_client_requests(int sd) {
 						[sd](struct pollfd item) {
 							return item.fd == sd;
 						}));
-		close(sd);
+		//close(sd); in desctructor
 		delete client;
 	}
 }
