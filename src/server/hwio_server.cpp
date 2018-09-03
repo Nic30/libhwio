@@ -186,13 +186,18 @@ void HwioServer::handle_client_requests(int sd) {
 	//Check if it was for closing , and also read the
 	//incoming message
 	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(sd);
-	if (_client == fd_to_client.end())
-		throw std::runtime_error(
-				std::string(
-						"[HWIO, server] fd_to_client does not know about socket for client on socket:")
-						+ to_string(sd));
+	ClientInfo * client = nullptr;
+	if (_client == fd_to_client.end()) {
+		client = add_new_client(sd);
+	} else {
+		client = _client->second;
+	}
 
-	auto client = _client->second;
+		//throw std::runtime_error(
+		//		std::string(
+		//				"[HWIO, server] fd_to_client does not know about socket for client on socket:")
+		//				+ to_string(sd));
+
 	assert(client->fd == sd);
 
 	size_t rx_data_size;
