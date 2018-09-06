@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(hwio)
 
+#Setup CMake to run tests
+enable_testing()
+
 include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -21,7 +24,7 @@ set(LIB_HWIO_INCLUDE
 	./src/bus/hwio_bus_remote.h
 	./src/bus/hwio_bus_devicetree.h
 	./src/bus/hwio_bus_primitive.h
-	./src/bus/hwio_bus_xml.h
+	./src/bus/hwio_bus_json.h
 	./src/bus/ihwio_bus.h
 	./src/bus/hwio_client_to_server_con.h
 )
@@ -50,41 +53,15 @@ set(LIB_HWIO_SRC
 	./src/bus/hwio_client_to_server_con.cpp
 	./src/bus/hwio_bus_remote.cpp
 	./src/bus/hwio_bus_devicetree.cpp
-	./src/bus/hwio_bus_xml.cpp
+	./src/bus/hwio_bus_json.cpp
 )
-find_package(LibXml2 REQUIRED)
-
+find_package(Boost REQUIRED)
 # define main library
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(hwio STATIC ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC})
 target_include_directories(hwio
-	PUBLIC ${LIBXML2_INCLUDE_DIR}
+	PUBLIC ${Boost_INCLUDE_DIRS}
 	PUBLIC ${LIB_HWIO_PRIVATE_INCLUDE_DIRS})
-target_link_libraries(hwio 
-	PUBLIC ${LIBXML2_LIBRARIES})
-
-set(LIB_HWIO_TEST_SRC 
-	./src/selftest/test_hwio_bus_remote.cpp
-	./src/selftest/test_hwio_bus_xml.cpp
-	./src/selftest/test_hwio_version.cpp
-	./src/selftest/hwio_selftest.cpp
-	./src/selftest/hwio_test.h
-	./src/selftest/test_hwio_comp_spec.cpp
-	./src/selftest/test_hwio_component_search.cpp
-	./src/selftest/test_hwio_bus_devicetree.cpp
-)
-
-# define testsuite executable
-add_executable(libhwio_test ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC} ${LIB_HWIO_TEST_SRC})
-target_include_directories(libhwio_test PRIVATE ${LIBXML2_INCLUDE_DIR} ${LIB_HWIO_PRIVATE_INCLUDE_DIRS})
-
-# Add pthread library
-find_package(Threads REQUIRED)
-target_link_libraries(libhwio_test
-	PUBLIC Threads::Threads
-	PUBLIC ${LIBXML2_LIBRARIES}
-)
-
 
 # Define install files
 set(headers ${LIB_HWIO_INCLUDE})
@@ -97,4 +74,39 @@ install(TARGETS hwio EXPORT hwio-targets DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(EXPORT hwio-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/hwio)
 install(FILES ${headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/hwio")
 install(FILES hwio-config.cmake DESTINATION "${CMAKE_INSTALL_LIBDIR}/hwio")
+
+
+################################### TESTS ##################################
+find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+find_package(Threads REQUIRED)
+
+file(GLOB TEST_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/selftest/*.cpp)
+
+#Run through each source
+foreach(testSrc ${TEST_SRCS})
+        #Extract the filename without an extension (NAME_WE)
+        get_filename_component(testName ${testSrc} NAME_WE)
+
+        #Add compile target
+        add_executable(${testName} ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC} ${testSrc})
+        # indicates the shared library variant
+		target_include_directories(${testName}
+			PRIVATE ${Boost_INCLUDE_DIRS}
+			 		${LIB_HWIO_PRIVATE_INCLUDE_DIRS}
+			 		src/selftest)
+		target_compile_definitions(${testName} PRIVATE "BOOST_TEST_DYN_LINK=1")
+        target_link_libraries(${testName} ${Boost_LIBRARIES} Threads::Threads)
+
+        #Move testing binaries into a testBin directory
+        set_target_properties(${testName} PROPERTIES 
+            RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/testBin)
+
+        #Finally add it to test execution - 
+        #Notice the WORKING_DIRECTORY and COMMAND
+        add_test(NAME ${testName} 
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ 
+                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/testBin/${testName} )
+endforeach(testSrc)
+
+
 

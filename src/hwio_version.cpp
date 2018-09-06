@@ -73,5 +73,10 @@ hwio_version::hwio_version(const std::string & version_str) {
 		throw std::runtime_error("[HWIO] Wrong hwio_version format");
 }
 
+std::ostream& operator<<(std::ostream& os, const hwio_version& ver) {
+	os << ver.to_str();
+	return os;
+}
+
 }
 

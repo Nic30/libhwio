@@ -1,6 +1,6 @@
-@copyright Brno University of Technology
-@date 2012
-
+# Original idea of multiplatform library for userspace access to FPGA accelerators
 @author Denis Matoušek <xmatou08@stud.fit.vutbr.cz>
 @author Jan Viktorin <xvikto03@stud.fit.vutbr.cz>
-@author Michal Orsak <xorsak01@fit.vutbr.cz>
+
+# Total C++ rewrite, remote devices, device action calls, runtime specification of buses 
+@author Michal Orsak <michal.o.socials@gmail.com>

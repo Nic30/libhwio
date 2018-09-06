@@ -1,5 +1,0 @@
-<hwio_config version="0.5">
-  <bus>
-    <xml file="devies.xml" />
-  </bus>
-</hwio_config>

@@ -17,7 +17,7 @@ const char * hwio_client_to_server_con::DEFAULT_SERVER_ADDRESS =
 
 const size_t hwio_client_to_server_con::DEV_TIMEOUT = 500000;
 
-hwio_client_to_server_con::hwio_client_to_server_con(const char *host) :
+hwio_client_to_server_con::hwio_client_to_server_con(std::string host) :
 		sockfd(-1), orig_addr(host) {
 	addr = parse_ip_and_port(host);
 }

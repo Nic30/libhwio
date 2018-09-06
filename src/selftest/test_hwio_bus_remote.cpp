@@ -1,14 +1,16 @@
-#include "hwio_test.h"
+#define BOOST_TEST_MODULE "Tests of hwio_bus_remote"
+#include <boost/test/unit_test.hpp>
+
 #include "hwio_bus_remote.h"
 #include "hwio_server.h"
 #include "hwio_bus_devicetree.h"
-#include "hwio_bus_xml.h"
 #include "hwio_remote_utils.h"
 #include "hwio_device_remote.h"
 
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include "../bus/hwio_bus_json.h"
 
 using namespace std;
 namespace hwio {
@@ -39,11 +41,11 @@ void run_server() {
 	spot_dev_mem_file();
 	hwio_bus_devicetree bus_on_server("test_samples/device-tree0_32b",
 			"test_samples/mem0.dat");
-	hwio_bus_xml bus_on_server_xml("test_samples/hwio_test_simple.xml");
+	hwio_bus_json bus_on_server_json("test_samples/device_descriptions/simple.json");
 
 	string server_addr_str(server_addr);
 	struct addrinfo * addr = parse_ip_and_port(server_addr_str);
-	HwioServer server(addr, { &bus_on_server, &bus_on_server_xml });
+	HwioServer server(addr, { &bus_on_server, &bus_on_server_json });
 
 	server.prepare_server_socket();
 	server.handle_client_msgs(&run_server_flag);
@@ -79,11 +81,11 @@ void run_server_with_plugins0() {
 	spot_dev_mem_file();
 	hwio_bus_devicetree bus_on_server("test_samples/device-tree0_32b",
 			"test_samples/mem0.dat");
-	hwio_bus_xml bus_on_server_xml("test_samples/hwio_test_simple.xml");
+	hwio_bus_json bus_on_server_json("test_samples/device_descriptions/simple.json");
 
 	string server_addr_str(server_addr);
 	struct addrinfo * addr = parse_ip_and_port(server_addr_str);
-	HwioServer server(addr, { &bus_on_server, &bus_on_server_xml });
+	HwioServer server(addr, { &bus_on_server, &bus_on_server_json });
 
 	server.install_plugin_fn<plugin_add_int_args, uint32_t>("add_int", _add_int);
 
@@ -96,18 +98,18 @@ void run_server_with_plugins0() {
 void _test_device_rw(ihwio_dev * dev) {
 	dev->memset(0, 0, 32 * sizeof(uint32_t));
 	for (int i = 0; i < 32 * 4; i++) {
-		test_assert(dev->read8(i * sizeof(uint8_t)) == 0, "read8 0");
+		BOOST_CHECK_EQUAL(dev->read8(i * sizeof(uint8_t)), 0);
 	}
 
 	//for (int i = 0; i < 32*2; i++) {
-	//	test_assert(s0->read16(i * sizeof(uint16_t)) == 0, "read16 0");
+	//	BOOST_CHECK_EQUAL(s0->read16(i * sizeof(uint16_t)) == 0, "read16 0");
 	//}
 
 	for (int i = 0; i < 32; i++) {
-		test_assert(dev->read32(i * sizeof(uint32_t)) == 0, "read32 0");
+		BOOST_CHECK_EQUAL(dev->read32(i * sizeof(uint32_t)), 0);
 	}
 	for (int i = 0; i < 32 / 2; i++) {
-		test_assert(dev->read64(i * sizeof(uint64_t)) == 0, "read64 0");
+		BOOST_CHECK_EQUAL(dev->read64(i * sizeof(uint64_t)), 0);
 	}
 
 	unsigned char buff[32 * sizeof(uint32_t)];
@@ -115,25 +117,21 @@ void _test_device_rw(ihwio_dev * dev) {
 	memset(buff_ref, 0, 32 * sizeof(uint32_t));
 
 	dev->read(0, buff, 32 * sizeof(uint32_t));
-	test_assert(memcmp(buff, buff_ref, 32 * sizeof(uint32_t)) == 0,
-			"read all 0");
+	BOOST_CHECK_EQUAL(memcmp(buff, buff_ref, 32 * sizeof(uint32_t)), 0);
 
 	for (unsigned i = 0; i < 32 * sizeof(uint32_t); i++)
 		buff_ref[i] = i + 1;
 
 	dev->write(0, buff_ref, 32 * sizeof(uint32_t));
 	for (int i = 0; i < 32 * 4; i++) {
-		test_assert(dev->read8(i * sizeof(uint8_t)) == i + 1, "read8 sequence");
+		BOOST_CHECK_EQUAL(dev->read8(i * sizeof(uint8_t)), i + 1);
 	}
 
 	dev->read(0, buff, 32 * sizeof(uint32_t));
-	test_assert(memcmp(buff, buff_ref, 32 * sizeof(uint32_t)) == 0,
-			"read all sequence");
+	BOOST_CHECK_EQUAL(memcmp(buff, buff_ref, 32 * sizeof(uint32_t)), 0);
 
 }
-
-void test_remote_rw() {
-	test_start();
+BOOST_AUTO_TEST_CASE(test_remote_rw) {
 	run_server_flag = true;
 	thread server_thread(run_server);
 	server_start_delay();
@@ -143,7 +141,7 @@ void test_remote_rw() {
 	hwio_comp_spec dev0("dev0,v-1.0.a");
 	auto devices = bus->find_devices((dev_spec_t ) { dev0 });
 
-	test_assert(devices.size() == 1, "dev0,v-1.0.a");
+	BOOST_CHECK_EQUAL(devices.size(), 1);
 
 	auto s0 = devices[0];
 	s0->attach();
@@ -153,11 +151,9 @@ void test_remote_rw() {
 	run_server_flag = false;
 	server_thread.join();
 	server_stop_delay();
-	test_end();
 }
 
-void test_remote_device_load() {
-	test_start();
+BOOST_AUTO_TEST_CASE(test_remote_device_load) {
 	run_server_flag = true;
 	thread server_thread(run_server);
 	server_start_delay();
@@ -167,30 +163,25 @@ void test_remote_device_load() {
 
 		hwio_comp_spec serial0("xlnx,xps-uartlite-1.1.97");
 		auto serialDevs = bus->find_devices((dev_spec_t ) { serial0 });
-		test_assert(serialDevs.size() == 2, "find by xlnx,xps-uartlite-1.1.97");
+		BOOST_CHECK_EQUAL(serialDevs.size(), 2);
 		hwio_comp_spec serial1("xlnx,xps-uartlite-1.0.97");
 		dev_spec_t spec = { serial1 };
-		test_assert(bus->find_devices(spec).size() == 2,
-				"find by xlnx,xps-uartlite-1.0.97");
+		BOOST_CHECK_EQUAL(bus->find_devices(spec).size(), 2);
 
 		hwio_comp_spec simplebus("simple-bus");
-		test_assert(bus->find_devices((dev_spec_t ) { simplebus }).size() == 1,
-				"find by simple-bus");
+		BOOST_CHECK_EQUAL(bus->find_devices((dev_spec_t ) { simplebus }).size(),1);
 
 		hwio_comp_spec serial_name;
 		serial_name.name_set("serial@84000000");
-		test_assert(
-				bus->find_devices((dev_spec_t ) { serial_name }).size() == 1,
-				"find by name serial@84000000");
+		BOOST_CHECK_EQUAL(
+				bus->find_devices((dev_spec_t ) { serial_name }).size(), 1);
 	}
 	run_server_flag = false;
 	server_thread.join();
 	server_stop_delay();
-	test_end();
 }
 
-void test_remote_ping() {
-	test_start();
+BOOST_AUTO_TEST_CASE(test_remote_ping) {
 	run_server_flag = true;
 	thread server_thread(run_server);
 	server_start_delay();
@@ -202,7 +193,7 @@ void test_remote_ping() {
 			cout.flush();
 			cerr.flush();
 			//cout << i << "--------------------" << endl;
-			test_assert(con->ping() == 0, "ping works");
+			BOOST_CHECK_EQUAL(con->ping(), 0);
 		}
 		delete con;
 	}
@@ -210,11 +201,9 @@ void test_remote_ping() {
 	run_server_flag = false;
 	server_thread.join();
 	server_stop_delay();
-	test_end();
 }
 
-void test_remote_call() {
-	test_start();
+BOOST_AUTO_TEST_CASE(test_remote_call) {
 	run_server_flag = true;
 	thread server_thread(run_server_with_plugins0);
 	server_start_delay();
@@ -224,22 +213,14 @@ void test_remote_call() {
 	hwio_comp_spec dev0("dev0,v-1.0.a");
 	auto devices = bus->find_devices((dev_spec_t ) { dev0 });
 
-	test_assert(devices.size() == 1, "dev0,v-1.0.a");
-	test_assert(add_int(devices.at(0), 1, 2) == 3, "1+2=3");
-	test_assert(add_int(devices.at(0), 1<<16, 2) == ((1<<16) + 2), "(1<<16)+2=(1<<16)+2");
+	BOOST_CHECK_EQUAL(devices.size(), 1);
+	BOOST_CHECK_EQUAL(add_int(devices.at(0), 1, 2), 3);
+	BOOST_CHECK_EQUAL(add_int(devices.at(0), 1<<16, 2), ((1<<16) + 2));
 
 
 	run_server_flag = false;
 	server_thread.join();
 	server_stop_delay();
-	test_end();
-}
-
-void test_hwio_bus_remote_all() {
-	test_remote_ping();
-	test_remote_device_load();
-	test_remote_rw();
-	test_remote_call();
 }
 
 }

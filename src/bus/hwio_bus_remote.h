@@ -23,7 +23,7 @@ class hwio_bus_remote: public ihwio_bus {
 
 public:
 	hwio_bus_remote(const hwio_bus_remote & other) = delete;
-	hwio_bus_remote(const char * host);
+	hwio_bus_remote(std::string host);
 
 	/**
 	 * Lookup device in seen_devices or construct new and add it to seen_devices

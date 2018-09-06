@@ -1,39 +1,38 @@
-#include "hwio_test.h"
+#define BOOST_TEST_MODULE "Tests of hwio_version"
+#include <boost/test/unit_test.hpp>
+
+#include "test_utils.h"
+#include "../hwio_version.h"
 
 namespace hwio {
 
-void test_version_match(void) {
-	test_start();
-
+BOOST_AUTO_TEST_CASE(test_version_match) {
 	struct hwio_version v1;
 	struct hwio_version v2;
 	v1 = {4, 5, 6};
 	v2 = {4, 5, 0};
-	test_assert(v1 != v2, "Version matches");
+	BOOST_CHECK_NE(v1, v2);
 
 	v2 = {4, 5, 6};
-	test_assert(v1 == v2, "Version does not match");
+	BOOST_CHECK_EQUAL(v1, v2);
 
 	v2 = {4, 5};
-	test_assert(v1 == v2, "Version does not match");
+	BOOST_CHECK_EQUAL(v1, v2);
 
 	v2 = {4};
-	test_assert(v1 == v2, "Version does not match");
+	BOOST_CHECK_EQUAL(v1, v2);
 
 	v2 = {};
-	test_assert(v1 == v2, "Version does not match");
+	BOOST_CHECK_EQUAL(v1, v2);
 
 	v2 = {HWIO_VERSION_NA, 5, HWIO_VERSION_NA};
-	test_assert(v1 == v2, "Version does not match");
+	BOOST_CHECK_EQUAL(v1, v2);
 
 	v2 = {HWIO_VERSION_NA, 3, HWIO_VERSION_NA};
-	test_assert(v1 != v2, "Version does not match");
-
-	test_end();
+	BOOST_CHECK_NE(v1, v2);
 }
 
-void test_parse_version() {
-	test_start();
+BOOST_AUTO_TEST_CASE(test_parse_version) {
 	hwio_version ver;
 
 	ver = {"1.00.a"};
@@ -62,13 +61,6 @@ void test_parse_version() {
 
 	ver = {"12.12.c"};
 	test_version(ver, 12, 12, 'c');
-
-	test_end();
-}
-
-void test_hwio_version_all() {
-	test_version_match();
-	test_parse_version();
 }
 
 }

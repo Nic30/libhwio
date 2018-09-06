@@ -1,11 +1,12 @@
-#include "hwio_test.h"
+#define BOOST_TEST_MODULE "Tests of hwio_device_mmap"
+#include <boost/test/unit_test.hpp>
+
 #include "hwio_bus_primitive.h"
 #include "hwio_device_mmap.h"
 
 namespace hwio {
 
-void test_byname() {
-	test_start();
+BOOST_AUTO_TEST_CASE(test_byname) {
 	std::vector<hwio_device_mmap*> devs = { //
 			new hwio_device_mmap({"dsjfskdjf", "sdkfjsdlkfj", {9, 9}}, 0, 4),       //
 			new hwio_device_mmap({"test-vendor-2", "test-comp-2", {1, 0, 5}}, 0, 4),//
@@ -20,22 +21,16 @@ void test_byname() {
 
 	hwio_bus_primitive bus0;
 
-	test_assert(bus0.find_devices(compat).size() == 0,
-			"Can not find when there are not devices");
+	BOOST_CHECK_EQUAL(bus0.find_devices(compat).size(), 0);
 	for (auto & d : devs) {
 		bus0._all_devices.push_back(d);
 	}
 	auto found = bus0.find_devices(compat);
-	test_assert(found.size() == 2,
-			"Found when devices present");
+	BOOST_CHECK_EQUAL(found.size(), 2);
 	for (auto & d : devs) {
 		delete d;
 	}
-	test_end();
 }
 
-void run_unit_tests_component_search() {
-	test_byname();
-}
 
 }

@@ -38,4 +38,6 @@ struct __attribute__((packed)) hwio_version {
 	std::string to_str() const;
 };
 
+std::ostream& operator<<(std::ostream& os, const hwio_version& cs);
+
 }

@@ -1,0 +1,70 @@
+{
+	"memfile": "/dev/rsoc-acc.0",
+	"offset": "0x40000000",
+	"devices": [
+		{
+			"base": "0x00040000",
+			"size": "0x00040000",
+			"name": "dev4",
+			"compatible": [
+				"abc4-88,comp40000_dev-1.00.a"
+			]
+		},
+		{
+			"base": "0x00080000",
+			"size": "0x00010000",
+			"name": "dev8",
+			"compatible": [
+				"abc82-654-486,axi_dev-1.00.a"
+			]
+		},
+		{
+			"base": "0x000A0000",
+			"size": "0x00010000",
+			"name": "devA",
+			"compatible": [
+				"test,test_dev_A-1.00.a"
+			]
+		},
+		{
+			"base": "0x000D0000",
+			"size": "0x00010000",
+			"name": "devD",
+			"compatible": [
+				"test,test_dev-1.01.a"
+			]
+		},
+		{
+			"base": "0x000B0000",
+			"size": "0x00010000",
+			"name": "dispather",
+			"compatible": [
+				"test,dev-1.00.a"
+			]
+		},
+		{
+			"base": "0x000E0000",
+			"size": "0x00010000",
+			"name": "dev_E",
+			"compatible": [
+				"test,test_dev_e-1.00.a"
+			]
+		},
+		{
+			"base": "0x00100000",
+			"size": "0x00040000",
+			"name": "dev_10",
+			"compatible": [
+				"test,dev10-1.00.a"
+			]
+		},
+		{
+			"base": "0x00110000",
+			"size": "0x00040000",
+			"name": "dev_11",
+			"compatible": [
+				"test,dev10-1.00.a"
+			]
+		}
+	]
+}

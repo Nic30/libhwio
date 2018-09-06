@@ -14,14 +14,14 @@ class hwio_client_to_server_con {
 	int rx_bytes(size_t size);
 
 public:
-	const char * orig_addr;
+	std::string orig_addr;
 	static const char * DEFAULT_SERVER_ADDRESS;
 	static const size_t DEV_TIMEOUT;
 
 	uint8_t rx_buffer[BUFFER_SIZE];
 	uint8_t tx_buffer[BUFFER_SIZE];
 
-	hwio_client_to_server_con(const char *host);
+	hwio_client_to_server_con(std::string host);
 
 	/**
 	 * @throw runtime_error

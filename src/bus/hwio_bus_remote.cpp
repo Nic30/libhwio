@@ -9,7 +9,7 @@
 
 namespace hwio {
 
-hwio_bus_remote::hwio_bus_remote(const char * host) :
+hwio_bus_remote::hwio_bus_remote(std::string host) :
 		server(host) {
 	server.connect_to_server();
 }

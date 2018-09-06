@@ -99,4 +99,10 @@ bool hwio_comp_spec::operator!=(const hwio_comp_spec & other) const {
 	return !(*this == other);
 }
 
+
+std::ostream& operator<<(std::ostream& os, const hwio_comp_spec& cs) {
+	os << cs.to_str();
+	return os;
+}
+
 }

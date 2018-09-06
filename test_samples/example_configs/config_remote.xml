@@ -1,5 +1,0 @@
-<hwio_config version="0.5">
-  <bus>
-    <remote host="192.168.0.132:8890" />
-  </bus>
-</hwio_config>

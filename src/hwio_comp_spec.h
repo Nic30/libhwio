@@ -32,4 +32,6 @@ public:
 	std::string to_str() const;
 };
 
+std::ostream& operator<<(std::ostream& os, const hwio_comp_spec& ver);
+
 }

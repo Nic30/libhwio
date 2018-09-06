@@ -1,6 +1,0 @@
-<hwio_config>
-  <bus>
-    <!-- arria10 board -->
-    <remote host="192.168.0.132:8896" />
-  </bus>
-</hwio_config>

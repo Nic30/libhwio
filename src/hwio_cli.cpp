@@ -6,119 +6,96 @@
 #include <assert.h>
 #include <algorithm>
 
+#include "bus/hwio_bus_json.h"
 #include "hwio_bus_remote.h"
 #include "hwio_bus_devicetree.h"
-#include "hwio_bus_xml.h"
 
 namespace hwio {
 
 const char * hwio_help_str() {
 	return "HWIO " HWIO_VERSION "(build " __TIMESTAMP__ ") params:\n" //
-	"   if no configuration file is specified ~/.hwio/config.xml is used, if it does not exists /etc/hwio/config.xml is used\n"//
-	"   --hwio_config <path.xml>   load hwio configuration from xml file\n"//
+	"   if no configuration file is specified ~/.hwio/config.json is used, if it does not exists /etc/hwio/config.json is used\n"//
+	"   --hwio_config <path.json>   load hwio configuration from json file\n"//
 	"   --hwio_devicetree <path>   root of devicetree to load device info from (def. \"/proc/device-tree\")\n"//
 	"   --hwio_device_mem <path>   file with memory space of devices, use with -hwio_devicetree (def. \"/dev/mem\")\n"//
 	"   --hwio_remote <ip:port>    connect to remote hwio server\n"//
-	"   --hwio_xml <path.xml>      load devices from xml file\n";
+	"   --hwio_json <path.json>      load devices from json file\n";
 }
 
 /**
- * load hwio_bus from xml node
+ * load hwio_bus from json node
  **/
-ihwio_bus * hwio_bus_from_xml_node(xmlNode * n) {
-	if (xmlStrcmp(n->name, (const xmlChar *) "remote") == 0) {
-		xmlChar *host = xmlGetProp(n, (const xmlChar *) "host");
-		if (host == nullptr)
-			throw xml_wrong_format(
-					"definition of remote bus in xml missing \"host\" attribute");
-		return new hwio_bus_remote((char *) host);
-	} else if (xmlStrcmp(n->name, (const xmlChar *) "xml") == 0) {
-		xmlChar *file = xmlGetProp(n, (const xmlChar *) "file");
-		if (file == nullptr)
-			throw xml_wrong_format(
-					"definition of xml bus in xml missing \"file\" attribute");
-		return new hwio_bus_xml((char *) file);
-	} else if (xmlStrcmp(n->name, (const xmlChar *) "devicetree") == 0) {
-		xmlChar *devicetree = xmlGetProp(n, (const xmlChar *) "devicetree");
-		if (devicetree == nullptr)
-			throw xml_wrong_format(
-					"definition of devicetree bus in xml missing \"devicetree\" attribute");
-		xmlChar *mem = xmlGetProp(n, (const xmlChar *) "mem");
-		if (mem == nullptr) {
-			xmlFree(devicetree);
-			throw xml_wrong_format(
-					"definition of devicetree bus in xml missing \"mem\" attribute");
+ihwio_bus * hwio_bus_from_ptree(hwio_bus_json::ptree& n) {
+	auto type = n.get<std::string>("type");
+	if (type == "remote") {
+		auto host = n.get<std::string>("host", "");
+		if (host == ""){
+			throw wrong_format(
+					"definition of remote bus in json missing \"host\" attribute");
 		}
-		return new hwio_bus_devicetree((char *) devicetree, (char *) mem);
+		return new hwio_bus_remote(host);
+	} else if (type == "json") {
+		auto file = n.get<std::string>("file", "");
+		if (file == ""){
+			throw wrong_format(
+					"definition of json bus in json missing \"file\" attribute");
+		}
+		return new hwio_bus_json(file);
+	} else if (type == "devicetree") {
+		auto devicetree = n.get<std::string>("devicetree", "");
+		if (devicetree == ""){
+			throw wrong_format(
+					"definition of devicetree bus in json missing \"devicetree\" attribute");
+		}
+		auto mem = n.get<std::string>("mem", "");
+		if (mem == "") {
+			throw wrong_format(
+					"definition of devicetree bus in json missing \"mem\" attribute");
+		}
+		return new hwio_bus_devicetree(devicetree, mem);
 	} else {
-		throw xml_wrong_format(
-				std::string("unknown definition of bus (")
-						+ (const char *) n->name + ")");
+		throw wrong_format(
+				std::string("unknown definition of bus (") + type + ")");
 	}
 }
 
-std::vector<ihwio_bus *> hwio_config_load(xmlDoc * doc) {
+std::vector<ihwio_bus *> hwio_config_load(hwio_bus_json::ptree& root) {
 	std::vector<ihwio_bus *> res;
-	auto root = xmlDocGetRootElement(doc);
-	if (xmlStrcmp(root->name, (const xmlChar *) "hwio_config") == 0) {
-		for (xmlNode *n0 = root->xmlChildrenNode; n0 != nullptr; n0 =
-				n0->next) {
-			if (n0->type == XML_ELEMENT_NODE
-					&& xmlStrcmp(n0->name, (const xmlChar *) "bus") == 0) {
-				for (xmlNode *n1 = n0->xmlChildrenNode; n1 != nullptr;
-						n1 = n1->next) {
-					if (n1->type == XML_ELEMENT_NODE) {
-						auto b = hwio_bus_from_xml_node(n1);
-						res.push_back(b);
-					}
-				}
-			}
-		}
-	} else {
-		throw xml_wrong_format("Root element should be named hwio_config");
+	for (hwio_bus_json::value_type& busNode : root.get_child("buses")) {
+		assert(busNode.first.empty());
+		auto b = hwio_bus_from_ptree(busNode.second);
+		res.push_back(b);
 	}
 	return res;
 }
 
-std::vector<ihwio_bus *> hwio_config_load(const char * xml_file_name) {
-	/*
-	 * this initialize the library and check potential ABI mismatches
-	 * between the version it was compiled for and the actual shared
-	 * library used.
-	 */
-	LIBXML_TEST_VERSION
-
-	xmlDoc *doc = xmlReadFile(xml_file_name, NULL, 0);
-	if (doc == nullptr)
-		throw xml_wrong_format("Failed to parse");
-
-	auto res = hwio_config_load(doc);
-
-	xmlFreeDoc(doc);
-	/*
-	 * Cleanup function for the XML library.
-	 */
-	xmlCleanupParser();
-
-	return res;
+std::vector<ihwio_bus *> hwio_config_load(const std::string& file_name) {
+	if (access(file_name.c_str(), R_OK) != 0) {
+		throw std::runtime_error(
+				std::string("Specified config file for hwio_config_load does not exists ")
+						+ file_name);
+	}
+	hwio_bus_json::ptree root;
+	boost::property_tree::read_json(file_name, root);
+	return hwio_config_load(root);
 }
 
 std::vector<ihwio_bus *> hwio_load_default_config() {
 	struct passwd *pw = getpwuid(getuid());
 	const char *homedir = pw->pw_dir;
 	std::string config_in_home(homedir);
-	config_in_home += "/.hwio/config.xml";
+	config_in_home += "/.hwio/config.json";
 
 	std::vector<std::string> config_names = { config_in_home,
-			"/etc/hwio/config.xml" };
+			"/etc/hwio/config.json" };
 	for (auto & name : config_names) {
 		struct stat buffer;
 		bool file_exists = stat(name.c_str(), &buffer) == 0;
 		if (file_exists)
-			return hwio_config_load(name.c_str());
+			return hwio_config_load(name);
 	}
 	throw std::runtime_error(
-			"[HWIO, cli] can not find any config file (~/.hwio/config.xml or /etc/hwio/config.xml)");
+			"[HWIO, cli] can not find any config file (~/.hwio/config.json or /etc/hwio/config.json)");
 }
 
 void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
@@ -171,7 +148,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 					{ "hwio_devicetree", required_argument, nullptr, 'd' }, //
 					{ "hwio_device_mem", required_argument, nullptr, 'm' }, //
 					{ "hwio_remote", required_argument, nullptr, 'r' },     //
-					{ "hwio_xml", required_argument, nullptr, 'x' },        //
+					{ "hwio_json", required_argument, nullptr, 'j' },        //
 					{ nullptr, no_argument, nullptr, 0 }                    //
 			};
 
@@ -204,8 +181,8 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 				buses.push_back(new hwio_bus_remote(optarg));
 				break;
 
-			case 'x':
-				buses.push_back(new hwio_bus_xml(optarg));
+			case 'j':
+				buses.push_back(new hwio_bus_json(optarg));
 				break;
 
 			case 'd':
