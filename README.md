@@ -37,3 +37,8 @@ After this remote functions can be called on devices by it's name.
 * use types with constant size because types like int can differ between client and server (int -> int32_t) 
 * blocking in plugin function will freeze whole server.
 * exceptions are passed, but different exception is raised on client.
+
+## Simlar opensource projects
+* https://github.com/OPAE/opae-sdk - sdk for sharing of FPGA accelerators on Intel Xeon processors (only local, userspace)
+* https://github.com/open-power/snap - framework for passing actions to hardware accelerators, CAPI, HLS, userspace, IBM
+
