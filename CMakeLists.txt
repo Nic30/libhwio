@@ -24,6 +24,7 @@ set(LIB_HWIO_INCLUDE
 	./src/bus/hwio_bus_remote.h
 	./src/bus/hwio_bus_devicetree.h
 	./src/bus/hwio_bus_primitive.h
+	./src/bus/hwio_bus_composite.h
 	./src/bus/hwio_bus_json.h
 	./src/bus/ihwio_bus.h
 	./src/bus/hwio_client_to_server_con.h
@@ -53,6 +54,7 @@ set(LIB_HWIO_SRC
 	./src/bus/hwio_client_to_server_con.cpp
 	./src/bus/hwio_bus_remote.cpp
 	./src/bus/hwio_bus_devicetree.cpp
+	./src/bus/hwio_bus_composite.cpp
 	./src/bus/hwio_bus_json.cpp
 )
 find_package(Boost REQUIRED)
