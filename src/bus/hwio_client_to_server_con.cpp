@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <sstream>
+#include <assert.h>
 
 #include "ihwio_dev.h"
 #include "hwio_remote_utils.h"
@@ -34,8 +35,7 @@ void hwio_client_to_server_con::connect_to_server() {
 	tv.tv_usec = 0;
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*) &tv,
 			sizeof(struct timeval));
-	int ret;
-	ret = connect(sockfd, addr->ai_addr, addr->ai_addrlen);
+	int ret = connect(sockfd, addr->ai_addr, addr->ai_addrlen);
 	if (ret < 0) {
 		throw std::runtime_error(
 				std::string(
@@ -52,13 +52,15 @@ void hwio_client_to_server_con::connect_to_server() {
 int hwio_client_to_server_con::rx_bytes(size_t size) {
 	size_t bytesRead = 0;
 	int result;
+	assert(size <= BUFFER_SIZE);
 	while (bytesRead < size) {
-		result = read(sockfd, rx_buffer + bytesRead, size - bytesRead);
-		if (result <= 0) {
-			if (result >= -1 && (errno == EINTR))
+		errno = 0;
+		result = recv(sockfd, rx_buffer + bytesRead, size - bytesRead, MSG_DONTWAIT);
+		if (result < 0) {
+			if (errno == EAGAIN || errno == EINTR) {
 				continue;
-			perror("rx_bytes");
-			return result;
+			}
+			throw std::runtime_error(std::string("rx_bytes: ") + strerror(errno));
 		}
 		bytesRead += result;
 	}
@@ -108,16 +110,8 @@ int hwio_client_to_server_con::ping() {
 	return 0;
 }
 
-void hwio_client_to_server_con::bye() {
-	Hwio_packet_header * f = reinterpret_cast<Hwio_packet_header*>(tx_buffer);
-	f->body_len = 0;
-	f->command = HWIO_CMD_BYE;
-	tx_pckt();
-}
-
 hwio_client_to_server_con::~hwio_client_to_server_con() {
 	if (sockfd >= 0) {
-		bye();
 		close(sockfd);
 	}
 	if (addr != nullptr)

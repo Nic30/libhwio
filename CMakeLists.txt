@@ -80,7 +80,7 @@ install(FILES hwio-config.cmake DESTINATION "${CMAKE_INSTALL_LIBDIR}/hwio")
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 find_package(Threads REQUIRED)
 
-file(GLOB TEST_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} src/selftest/*.cpp)
+file(GLOB TEST_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tests/*.cpp)
 
 #Run through each source
 foreach(testSrc ${TEST_SRCS})
@@ -88,24 +88,24 @@ foreach(testSrc ${TEST_SRCS})
         get_filename_component(testName ${testSrc} NAME_WE)
 
         #Add compile target
-        add_executable(${testName} ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC} ${testSrc})
+        add_executable(${testName} ${LIB_HWIO_INCLUDE} ${testSrc})
         # indicates the shared library variant
 		target_include_directories(${testName}
 			PRIVATE ${Boost_INCLUDE_DIRS}
 			 		${LIB_HWIO_PRIVATE_INCLUDE_DIRS}
-			 		src/selftest)
+			 		${CMAKE_CURRENT_SOURCE_DIR}/test)
 		target_compile_definitions(${testName} PRIVATE "BOOST_TEST_DYN_LINK=1")
-        target_link_libraries(${testName} ${Boost_LIBRARIES} Threads::Threads)
+        target_link_libraries(${testName} hwio ${Boost_LIBRARIES} Threads::Threads)
 
         #Move testing binaries into a testBin directory
         set_target_properties(${testName} PROPERTIES 
-            RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR}/testBin)
+            RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/testBin)
 
         #Finally add it to test execution - 
         #Notice the WORKING_DIRECTORY and COMMAND
         add_test(NAME ${testName} 
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ 
-                 COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/testBin/${testName} )
+                 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/testBin/${testName} )
 endforeach(testSrc)
 
 

@@ -8,6 +8,10 @@
 
 namespace hwio {
 
+class interupt_recieved: public std::runtime_error {
+	using std::runtime_error::runtime_error;
+};
+
 class hwio_client_to_server_con {
 	int sockfd;
 	struct addrinfo * addr;
@@ -31,7 +35,6 @@ public:
 	int ping();
 	void tx_pckt();
 	void rx_pckt(Hwio_packet_header * header);
-	void bye();
 
 	~hwio_client_to_server_con();
 };

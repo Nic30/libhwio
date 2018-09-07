@@ -11,7 +11,7 @@ HwioServer::PProcRes HwioServer::send_err(int err_code, const string & msg) {
 	m->header.command = HWIO_CMD_MSG;
 	m->header.body_len = sizeof(m->body.err_code) + strlen(m->body.msg);
 	if (log_level >= logERROR)
-		std::cerr << "[ERROR] Error to client: " << msg << std::endl;
+		std::cerr << "[HWIO, server, ERROR] Error to client: " << msg << std::endl;
 
 	// [TODO] use strlen to resolve real len
 	return PProcRes(true, sizeof(ErrMsg));
