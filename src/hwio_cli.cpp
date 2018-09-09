@@ -249,4 +249,27 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	return buses.at(0);
 }
 
+
+std::vector<ihwio_dev*> hwio_select_devs_from_vector(const std::vector<ihwio_dev*>& devices, int index) {
+	std::vector<ihwio_dev*> dev_to_use;
+	if (index < 0) {
+		if (devices.size() <= 1) {
+			index = 0;
+		} else {
+			throw std::out_of_range(std::string("Multiple devices present, device index specification is required (devices_cnt=")
+					+ std::to_string(devices.size()) + ")");
+		}
+
+	}
+    if ((unsigned)index >= devices.size()) {
+        throw std::out_of_range(std::string("Can not use device ") + std::to_string(index)
+                + " because platform has only " + std::to_string(devices.size())
+                + " devices");
+    } else {
+        dev_to_use.push_back(devices.at(index));
+    }
+
+    return dev_to_use;
+}
+
 }
