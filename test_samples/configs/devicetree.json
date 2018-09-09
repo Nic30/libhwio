@@ -1,5 +1,10 @@
-<hwio_config version="0.5">
-  <bus>
-    <devicetree devicetree="/proc/device-tree" mem="/dev/mem" />
-  </bus>
-</hwio_config>
+{
+	"version": "0.6",
+	"bus": [
+		{
+			 "type": "devicetree",
+			 "devicetree": "/proc/device-tree",
+			 "mem":"/dev/mem"
+		}
+	]
+}
