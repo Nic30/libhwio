@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.0)
 project(hwio)
 
 include(GNUInstallDirs)
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
