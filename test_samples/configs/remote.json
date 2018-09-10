@@ -1,5 +1,6 @@
 {
-	"bus": [
+	"version": "0.6",
+	"buses": [
 		{
 			"type": "remote",
 			"host": "192.168.0.132:8896"

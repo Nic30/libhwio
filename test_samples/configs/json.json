@@ -1,6 +1,6 @@
 {
 	"version": "0.6",
-	"bus": [
+	"buses": [
 		{
 			"type": "json",
 			"file": "devies.json"
