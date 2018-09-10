@@ -16,6 +16,11 @@ namespace utf = boost::unit_test;
 using namespace std;
 namespace hwio {
 
+struct server_thread_args_t {
+	HwioServer * server;
+	bool * run_flag;
+};
+
 const typedef vector<hwio_comp_spec> dev_spec_t;
 
 const char * server_addr = "127.0.0.1:8896";
@@ -161,7 +166,7 @@ void _test_device_rw(ihwio_dev * dev) {
 
 BOOST_AUTO_TEST_SUITE(hwio_bus_remoteTC)
 
-BOOST_AUTO_TEST_CASE(test_remote_rw) {
+BOOST_AUTO_TEST_CASE(test_remote_rw, * utf::timeout(15)) {
 	run_server_flag = true;
 	thread server_thread(run_server);
 	server_start_delay();
@@ -182,7 +187,7 @@ BOOST_AUTO_TEST_CASE(test_remote_rw) {
 	server_stop_delay();
 }
 
-BOOST_AUTO_TEST_CASE(test_remote_device_load) {
+BOOST_AUTO_TEST_CASE(test_remote_device_load, * utf::timeout(15)) {
 	run_server_flag = true;
 	thread server_thread(run_server);
 	server_start_delay();
@@ -211,7 +216,7 @@ BOOST_AUTO_TEST_CASE(test_remote_device_load) {
 	server_stop_delay();
 }
 
-BOOST_AUTO_TEST_CASE(test_remote_ping) {
+BOOST_AUTO_TEST_CASE(test_remote_ping, * utf::timeout(15)) {
 	run_server_flag = true;
 	thread server_thread(run_server);
 	server_start_delay();
@@ -233,7 +238,7 @@ BOOST_AUTO_TEST_CASE(test_remote_ping) {
 	server_stop_delay();
 }
 
-BOOST_AUTO_TEST_CASE(test_remote_call) {
+BOOST_AUTO_TEST_CASE(test_remote_call, * utf::timeout(15)) {
 	run_server_flag = true;
 	thread server_thread(run_server_with_plugins0);
 	server_start_delay();
@@ -256,46 +261,46 @@ BOOST_AUTO_TEST_CASE(test_remote_call) {
 }
 
 
-BOOST_AUTO_TEST_CASE(test_remote_server_stability , * utf::timeout(15)) {
+BOOST_AUTO_TEST_CASE(test_remote_server_stability, * utf::timeout(15)) {
 	run_server_flag = true;
 	thread server_thread(run_server_with_plugins0);
 	server_start_delay();
 	try {
-	std::vector<hwio_bus_remote*> buses;
-	std::vector<int> opened_socketes;
-	for (int try_i = 0; try_i < 30; try_i++) {
-		for (int i = 0; i < 5; i++) {
-			auto bus = new hwio_bus_remote(server_addr);
-			buses.push_back(bus);
+		std::vector<hwio_bus_remote*> buses;
+		std::vector<int> opened_socketes;
+		for (int try_i = 0; try_i < 30; try_i++) {
+			for (int i = 0; i < 5; i++) {
+				auto bus = new hwio_bus_remote(server_addr);
+				buses.push_back(bus);
 
-			for (int i2 = 0; i2 < 5; i2++) {
-				int s = tcp_open(server_addr);
-				opened_socketes.push_back(s);
+				for (int i2 = 0; i2 < 5; i2++) {
+					int s = tcp_open(server_addr);
+					opened_socketes.push_back(s);
+				}
+
+				hwio_comp_spec dev0("dev0,v-1.0.a");
+				std::vector<ihwio_dev*> devices = bus->find_devices((dev_spec_t) { dev0 });
+
+				BOOST_CHECK_EQUAL(devices.size(), 1);
+
+				auto d = devices.at(0);
+				d->attach();
+
+				BOOST_CHECK_EQUAL(add_int(d, 1, 2), 3);
+				BOOST_CHECK_EQUAL(add_int(d, 1 << 16, 2), ((1 << 16) + 2));
+
 			}
 
-			hwio_comp_spec dev0("dev0,v-1.0.a");
-			std::vector<ihwio_dev*> devices = bus->find_devices((dev_spec_t) { dev0 });
+			for (auto bus : buses) {
+				delete bus;
+			}
+			buses.clear();
 
-			BOOST_CHECK_EQUAL(devices.size(), 1);
-
-			auto d = devices.at(0);
-			d->attach();
-
-			BOOST_CHECK_EQUAL(add_int(d, 1, 2), 3);
-			BOOST_CHECK_EQUAL(add_int(d, 1 << 16, 2), ((1 << 16) + 2));
-
+			for (int s : opened_socketes) {
+				close(s);
+			}
+			opened_socketes.clear();
 		}
-
-		for (auto bus : buses) {
-			delete bus;
-		}
-		buses.clear();
-
-		for (int s : opened_socketes) {
-			close(s);
-		}
-		opened_socketes.clear();
-	}
 	} catch (const std::runtime_error& e) {
 		std::cerr << e.what();
 		run_server_flag = false;
@@ -307,6 +312,46 @@ BOOST_AUTO_TEST_CASE(test_remote_server_stability , * utf::timeout(15)) {
 	server_thread.join();
 	server_stop_delay();
 }
+
+
+void serve_clients(server_thread_args_t * args) {
+	args->server->handle_client_msgs(args->run_flag);
+}
+
+BOOST_AUTO_TEST_CASE(clients_are_disconnecting_correctly, * utf::timeout(5)) {
+	spot_dev_mem_file();
+	run_server_flag = true;
+
+	hwio_bus_json bus_on_server_json(
+			"test_samples/device_descriptions/simple.json");
+
+	string server_addr_str(server_addr);
+	struct addrinfo * addr = parse_ip_and_port(server_addr_str);
+	HwioServer server(addr, { &bus_on_server_json });
+	server.prepare_server_socket();
+	server_thread_args_t args =  {&server, &run_server_flag};
+	thread server_thread(serve_clients, &args);
+	server_start_delay();
+	for (int i = 0; i < 10; i++) {
+		std::vector<ihwio_bus*> buses;
+		for (int i2 = 0; i2 < (i + 1); i2++) {
+			auto bus = new hwio_bus_remote(server_addr);
+			buses.push_back(bus);
+		}
+		usleep(100000);
+		BOOST_CHECK_EQUAL(server.get_client_cnt(), buses.size());
+		for (auto bus: buses)
+			delete bus;
+		usleep(100000);
+		BOOST_CHECK_EQUAL(server.get_client_cnt(), 0);
+	}
+	run_server_flag = false;
+	server_thread.join();
+	server_stop_delay();
+	freeaddrinfo(addr);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
 
 }

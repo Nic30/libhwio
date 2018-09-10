@@ -146,6 +146,7 @@ public:
 	HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses);
 	void prepare_server_socket();
 	void handle_client_msgs(bool * run_server);
+	size_t get_client_cnt();
 
 	// [TODO] plugin function should be restricted to device class by spec
 	template <typename ARGS_T, typename RET_T>

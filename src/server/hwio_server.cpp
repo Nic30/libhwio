@@ -111,6 +111,9 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 		}
 		return device_lookup_resp(client, q, cnt, tx_buffer);
 
+	case HWIO_CMD_BYE:
+		return PProcRes(true, 0);
+
 	case HWIO_CMD_MSG:
 		errM = reinterpret_cast<ErrMsg*>(rx_buffer);
 		errM->msg[MAX_NAME_LEN - 1] = 0;
@@ -148,6 +151,16 @@ ClientInfo * HwioServer::add_new_client(int socket) {
 	pfd.revents = 0;
 	poll_fds.push_back(pfd);
 	return client;
+}
+
+size_t HwioServer::get_client_cnt() {
+	size_t i = 0;
+	for (auto c : clients) {
+		if (c != nullptr)
+			i++;
+	}
+	assert(i == fd_to_client.size());
+	return i;
 }
 
 void HwioServer::handle_client_msgs(bool * run_server) {

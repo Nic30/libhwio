@@ -110,8 +110,16 @@ int hwio_client_to_server_con::ping() {
 	return 0;
 }
 
+void hwio_client_to_server_con::bye() {
+	Hwio_packet_header * f = reinterpret_cast<Hwio_packet_header*>(tx_buffer);
+	f->body_len = 0;
+	f->command = HWIO_CMD_BYE;
+	tx_pckt();
+}
+
 hwio_client_to_server_con::~hwio_client_to_server_con() {
 	if (sockfd >= 0) {
+		bye();
 		close(sockfd);
 	}
 	if (addr != nullptr)

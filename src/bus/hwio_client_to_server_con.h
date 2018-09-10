@@ -16,6 +16,7 @@ class hwio_client_to_server_con {
 	int sockfd;
 	struct addrinfo * addr;
 	int rx_bytes(size_t size);
+	void bye();
 
 public:
 	std::string orig_addr;

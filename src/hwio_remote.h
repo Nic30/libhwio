@@ -100,13 +100,15 @@ enum HWIO_CMD {
 	HWIO_CMD_QUERY_RESP = 7,	// response with device ids
 	// HwioFrame<DevQueryResp>
 	//  number of devices can be 0
-	HWIO_CMD_MSG = 8,
+	HWIO_CMD_BYE = 8,	// client request to terminate connection
+	// 1B cmd
+	HWIO_CMD_MSG = 9,
 	// 1B cmd
 	// 4B signed code
 	// 1024B of err msg string
-	HWIO_CMD_REMOTE_CALL = 9,
+	HWIO_CMD_REMOTE_CALL = 10,
 	// HwioFrame<RemoteCall>
-	HWIO_CMD_REMOTE_CALL_RET = 10,
+	HWIO_CMD_REMOTE_CALL_RET = 11,
 	// HwioFrame<RemoteCallRet>
 };
 
