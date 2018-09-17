@@ -53,14 +53,15 @@ public:
 	 */
 	virtual void read(hwio_phys_addr_t offset, void *__restrict dst, size_t n) {
 		while (true) {
-			if (n >= sizeof(uint64_t)) {
-				*(uint64_t*) dst = read64(offset);
-				n -= sizeof(uint64_t);
-				offset += sizeof(uint64_t);
-				dst = ((uint8_t*) dst) + sizeof(uint64_t);
-				continue;
-
-			} else if (n >= sizeof(uint32_t)) {
+			//if (n >= sizeof(uint64_t)) {
+			//	*(uint64_t*) dst = read64(offset);
+			//	n -= sizeof(uint64_t);
+			//	offset += sizeof(uint64_t);
+			//	dst = ((uint8_t*) dst) + sizeof(uint64_t);
+			//	continue;
+            //
+			//} else
+			if (n >= sizeof(uint32_t)) {
 				*(uint32_t*) dst = read32(offset);
 				n -= sizeof(uint32_t);
 				offset += sizeof(uint32_t);
@@ -94,13 +95,14 @@ public:
 				| fill32;
 
 		while (true) {
-			if (n >= sizeof(uint64_t)) {
-				write64(offset, fill64);
-				n -= sizeof(uint64_t);
-				offset += sizeof(uint64_t);
-				continue;
-
-			} else if (n >= sizeof(uint32_t)) {
+			//if (n >= sizeof(uint64_t)) {
+			//	write64(offset, fill64);
+			//	n -= sizeof(uint64_t);
+			//	offset += sizeof(uint64_t);
+			//	continue;
+            //
+			//} else
+			if (n >= sizeof(uint32_t)) {
 				write32(offset, fill32);
 				n -= sizeof(uint32_t);
 				offset += sizeof(uint32_t);
@@ -124,14 +126,15 @@ public:
 	 * */
 	virtual void write(hwio_phys_addr_t offset, const void * data, size_t n) {
 		while (true) {
-			if (n >= sizeof(uint64_t)) {
-				write64(offset, *(uint64_t*) data);
-				n -= sizeof(uint64_t);
-				offset += sizeof(uint64_t);
-				data = ((uint8_t*) data) + sizeof(uint64_t);
-				continue;
-
-			} else if (n >= sizeof(uint32_t)) {
+			//if (n >= sizeof(uint64_t)) {
+			//	write64(offset, *(uint64_t*) data);
+			//	n -= sizeof(uint64_t);
+			//	offset += sizeof(uint64_t);
+			//	data = ((uint8_t*) data) + sizeof(uint64_t);
+			//	continue;
+            //
+			//} else
+			if (n >= sizeof(uint32_t)) {
 				write32(offset, *(uint32_t*) data);
 				n -= sizeof(uint32_t);
 				offset += sizeof(uint32_t);
