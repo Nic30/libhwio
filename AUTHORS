@@ -1,3 +1,6 @@
-Denis Matoušek <xmatou08@stud.fit.vutbr.cz> - Original idea of multiplatform library for userspace access to FPGA accelerators
-Jan Viktorin <xvikto03@stud.fit.vutbr.cz> - support for RSoC bridge
+# Original library of multiplatform library for userspace access to FPGA accelerators
+Denis Matoušek <xmatou08@stud.fit.vutbr.cz>
+Korček Pavol <ikorcek@fit.vutbr.cz>
+Jan Viktorin <xvikto03@stud.fit.vutbr.cz>
+
 Michal Orsak <michal.o.socials@gmail.com> - Total C++ rewrite, remote devices, device action calls, runtime specification of buses
