@@ -49,8 +49,13 @@ This files currently contains definitions of busses where libhwio should search 
 
 ## installation
 ```
+# install dependencies on ubuntu 18.04
+sudo apt install build-essential cmake libboost-all-dev
+
+git clone https://github.com/Nic30/libhwio.git && cd libhwio 
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+#CMAKE_BUILD_TYPE=Debug allows you to run this library with debuger etc., it is optional
+cmake .. -DCMAKE_BUILD_TYPE=Debug 
 make
 sudo make install
 ```
