@@ -7,7 +7,7 @@ cache:
 
 matrix:
   include:
-    - env: COMPILER=g++ BUILD=Debug STANDARD=14
+    - env: COMPILER=g++-7 BUILD=Debug STANDARD=14
       compiler: gcc
       addons:
         apt:
@@ -16,7 +16,7 @@ matrix:
             - sourceline: 'ppa:mhier/libboost-latest'
             - ubuntu-toolchain-r-test
           packages:
-            - g++
+            - g++-7
             - boost1.67
 
 before_script:
