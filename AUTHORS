@@ -1,6 +1,7 @@
-# Original library of multiplatform library for userspace access to FPGA accelerators
+# 2012-2013, Original library of multiplatform library for userspace access to FPGA accelerators
 Denis Matoušek <xmatou08@stud.fit.vutbr.cz>
 Korček Pavol <ikorcek@fit.vutbr.cz>
 Jan Viktorin <xvikto03@stud.fit.vutbr.cz>
 
+# 2018-?
 Michal Orsak <michal.o.socials@gmail.com> - Total C++ rewrite, remote devices, device action calls, runtime specification of buses

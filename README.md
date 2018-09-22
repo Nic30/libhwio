@@ -43,14 +43,21 @@ This files currently contains definitions of busses where libhwio should search 
 
 
 ## Simlar opensource projects
+
+* FPGA Device Feature List in Linux kernel 4.19
 * [opae-sdk](https://github.com/OPAE/opae-sdk) - sdk for sharing of FPGA accelerators on Intel Xeon processors (only local, userspace)
 * [snap](https://github.com/open-power/snap) - framework for passing actions to hardware accelerators, CAPI, HLS, userspace, IBM
 
 
 ## installation
 ```
+# install dependencies on ubuntu 18.04
+sudo apt install build-essential cmake libboost-all-dev
+
+git clone https://github.com/Nic30/libhwio.git && cd libhwio 
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug
+#CMAKE_BUILD_TYPE=Debug allows you to run this library with debuger etc., it is optional
+cmake .. -DCMAKE_BUILD_TYPE=Debug 
 make
 sudo make install
 ```
