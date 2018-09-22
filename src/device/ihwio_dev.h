@@ -91,8 +91,8 @@ public:
 		uint32_t fill32 = c;
 		fill32 |= c << 8 | c;
 		fill32 |= fill32 << 2 * 8;
-		uint64_t fill64 = (((uint64_t) fill32) << sizeof(uint32_t) * 8)
-				| fill32;
+	    //uint64_t fill64 = (((uint64_t) fill32) << sizeof(uint32_t) * 8)
+	    //		| fill32;
 
 		while (true) {
 			//if (n >= sizeof(uint64_t)) {
