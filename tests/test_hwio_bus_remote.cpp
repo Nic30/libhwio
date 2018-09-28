@@ -55,8 +55,9 @@ void run_server() {
 	HwioServer server(addr, { &bus_on_server, &bus_on_server_json });
 
 	server.prepare_server_socket();
-	server.handle_client_msgs(&run_server_flag);
-
+	while(run_server_flag) {
+		server.pool_client_msgs();
+    }
 	freeaddrinfo(addr);
 }
 /**
@@ -123,7 +124,9 @@ void run_server_with_plugins0() {
 			_add_int);
 
 	server.prepare_server_socket();
-	server.handle_client_msgs(&run_server_flag);
+	while(run_server_flag) {
+		server.pool_client_msgs();
+	}
 	freeaddrinfo(addr);
 }
 
@@ -315,7 +318,9 @@ BOOST_AUTO_TEST_CASE(test_remote_server_stability, * utf::timeout(15)) {
 
 
 void serve_clients(server_thread_args_t * args) {
-	args->server->handle_client_msgs(args->run_flag);
+	while(*args->run_flag) {
+		args->server->pool_client_msgs();
+	}
 }
 
 BOOST_AUTO_TEST_CASE(clients_are_disconnecting_correctly, * utf::timeout(5)) {
@@ -345,6 +350,7 @@ BOOST_AUTO_TEST_CASE(clients_are_disconnecting_correctly, * utf::timeout(5)) {
 		usleep(100000);
 		BOOST_CHECK_EQUAL(server.get_client_cnt(), 0);
 	}
+
 	run_server_flag = false;
 	server_thread.join();
 	server_stop_delay();

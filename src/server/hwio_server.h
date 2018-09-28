@@ -130,6 +130,8 @@ private:
 	static ihwio_dev * client_get_dev(ClientInfo * client, dev_id_t devId);
 
 public:
+	static const char * DEFAULT_ADDR;
+	struct timespec client_timeout;
 
 	enum loglevel_e {logERROR=0, logWARNING=1, logINFO=2, logDEBUG=3};
 
@@ -145,7 +147,13 @@ public:
 	std::map<const std::string, plugin_info_s> plugins;
 	HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses);
 	void prepare_server_socket();
-	void handle_client_msgs(bool * run_server);
+
+	/**
+	 * pool once over all sockets and handle messages
+	 *
+	 * @attention has to be called in cycle in order to have server running
+	 */
+	void pool_client_msgs();
 	size_t get_client_cnt();
 
 	// [TODO] plugin function should be restricted to device class by spec

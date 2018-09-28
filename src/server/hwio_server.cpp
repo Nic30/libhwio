@@ -10,8 +10,12 @@
 using namespace std;
 using namespace hwio;
 
+const char * HwioServer::DEFAULT_ADDR = "0.0.0.0:8896";
+
 HwioServer::HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses) :
 		addr(addr), master_socket(-1), log_level(logWARNING), buses(buses) {
+	client_timeout.tv_nsec = 1000 * POLL_TIMEOUT_MS;
+	client_timeout.tv_sec = POLL_TIMEOUT_MS / 1000;
 }
 
 void HwioServer::prepare_server_socket() {
@@ -163,64 +167,59 @@ size_t HwioServer::get_client_cnt() {
 	return i;
 }
 
-void HwioServer::handle_client_msgs(bool * run_server) {
-	struct timespec timeout;
-	timeout.tv_nsec = 1000 * POLL_TIMEOUT_MS;
-	timeout.tv_sec = POLL_TIMEOUT_MS / 1000;
-	sigset_t origmask;
-	sigprocmask(0, nullptr, &origmask);
+void HwioServer::pool_client_msgs() {
+	//sigset_t origmask;
+	//sigprocmask(0, nullptr, &origmask);
 
-	while (*run_server) {
-		// wait for an activity on one of the sockets , timeout is NULL ,
-		// so wait indefinitely
-		int err = ppoll(&poll_fds[0], poll_fds.size(), &timeout, &origmask);
-		if (err == 0) {
-			// timeout
-			continue;
-		} else if (err < 0) {
-			if (log_level >= logERROR)
-				LOG_ERR << "poll error" << endl;
-			continue;
-		}
+	// wait for an activity on one of the sockets , timeout is NULL ,
+	// so wait indefinitely
+	int err = ppoll(&poll_fds[0], poll_fds.size(), &client_timeout, nullptr);
+	if (err == 0) {
+		// timeout
+		return;
+	} else if (err < 0) {
+		if (log_level >= logERROR)
+			LOG_ERR << "poll error" << endl;
+		return;
+	}
 
-		// If something happened on the master socket,
-		// then its an incoming connection and we need to spot new client info instance
-		for (auto & fd : poll_fds) {
-			auto e = fd.revents;
-			if (fd.fd < 0 || fd.revents == 0)
+	// If something happened on the master socket,
+	// then its an incoming connection and we need to spot new client info instance
+	for (auto & fd : poll_fds) {
+		auto e = fd.revents;
+		if (fd.fd < 0 || fd.revents == 0)
+			continue;
+
+		if (fd.revents != POLLIN)
+			std::cerr << "fd:" << fd.fd << " revents:" << fd.revents
+					<< std::endl;
+
+		if ((e & POLLERR) | (e & POLLHUP) | (e & POLLNVAL)) {
+			if (fd.fd == master_socket) {
+				LOG_ERR << "Error on master socket" << std::endl;
 				continue;
-
-			if (fd.revents != POLLIN)
-				std::cerr << "fd:" << fd.fd << " revents:" << fd.revents
-						<< std::endl;
-
-			if ((e & POLLERR) | (e & POLLHUP) | (e & POLLNVAL)) {
-				if (fd.fd == master_socket) {
-					LOG_ERR << "Error on master socket" << std::endl;
-					continue;
-				} else {
-					LOG_ERR << "Error on socket" << fd.fd << std::endl;
-				}
-			} else if (fd.fd == master_socket) {
-				struct sockaddr_in address;
-				int addrlen = sizeof(address);
-				int new_socket;
-				if ((new_socket = accept(master_socket,
-						(struct sockaddr *) &address, (socklen_t*) &addrlen))
-						< 0)
-					throw runtime_error("error in accept for client socket");
-
-				if (log_level >= logINFO) {
-					//inform user of socket number - used in send and receive commands
-					std::cout << "[INFO] New connection, ip:"
-							<< inet_ntoa(address.sin_addr) << ", port:"
-							<< ntohs(address.sin_port) << " socket:"
-							<< new_socket << endl;
-				}
-				add_new_client(new_socket);
 			} else {
-				handle_client_requests(fd.fd);
+				LOG_ERR << "Error on socket" << fd.fd << std::endl;
 			}
+		} else if (fd.fd == master_socket) {
+			struct sockaddr_in address;
+			int addrlen = sizeof(address);
+			int new_socket;
+			if ((new_socket = accept(master_socket,
+					(struct sockaddr *) &address, (socklen_t*) &addrlen))
+					< 0)
+				throw runtime_error("error in accept for client socket");
+
+			if (log_level >= logINFO) {
+				//inform user of socket number - used in send and receive commands
+				std::cout << "[INFO] New connection, ip:"
+						<< inet_ntoa(address.sin_addr) << ", port:"
+						<< ntohs(address.sin_port) << " socket:"
+						<< new_socket << endl;
+			}
+			add_new_client(new_socket);
+		} else {
+			handle_client_requests(fd.fd);
 		}
 	}
 }
