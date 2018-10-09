@@ -145,12 +145,12 @@ char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_free) {
 ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	const option long_opts[] = { //
 			{ "hwio_config", required_argument, nullptr, 'c' },     //
-					{ "hwio_devicetree", required_argument, nullptr, 'd' }, //
-					{ "hwio_device_mem", required_argument, nullptr, 'm' }, //
-					{ "hwio_remote", required_argument, nullptr, 'r' },     //
-					{ "hwio_json", required_argument, nullptr, 'j' },        //
-					{ nullptr, no_argument, nullptr, 0 }                    //
-			};
+		    { "hwio_devicetree", required_argument, nullptr, 'd' }, //
+		    { "hwio_device_mem", required_argument, nullptr, 'm' }, //
+		    { "hwio_remote", required_argument, nullptr, 'r' },     //
+		    { "hwio_json", required_argument, nullptr, 'j' },       //
+		    { nullptr, no_argument, nullptr, 0 }                    //
+	};
 
 	// copy argv because options will be removed
 	std::vector<void *> to_free;
@@ -162,6 +162,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 
 	int original_opterr = opterr;
 	opterr = 0;
+	optind = 0;
 	try {
 		while (true) {
 			const auto opt = getopt_long(argc, _argv, "", long_opts, nullptr);
