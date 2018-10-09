@@ -17,7 +17,7 @@ const char * hwio_help_str() {
 	"   if no configuration file is specified ~/.hwio/config.json is used, if it does not exists /etc/hwio/config.json is used\n"//
 	"   --hwio_config <path.json>   load hwio configuration from json file\n"//
 	"   --hwio_devicetree <path>   root of devicetree to load device info from (def. \"/proc/device-tree\")\n"//
-	"   --hwio_device_mem <path>   file with memory space of devices, use with -hwio_devicetree (def. \"/dev/mem\")\n"//
+	"   --hwio_device_mem <path>   file with memory space of devices, use with --hwio_devicetree (def. \"/dev/mem\")\n"//
 	"   --hwio_remote <ip:port>    connect to remote hwio server\n"//
 	"   --hwio_json <path.json>      load devices from json file\n";
 }
