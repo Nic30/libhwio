@@ -72,7 +72,11 @@ uint32_t hwio_device_mmap::read32(hwio_phys_addr_t offset) {
 }
 
 uint64_t hwio_device_mmap::read64(hwio_phys_addr_t offset) {
-	return *((uint64_t *) ((char *) dev_mem + page_offset + offset));
+	uint64_t d = *((uint32_t *) ((char *) dev_mem + page_offset + offset));
+	uint64_t tmp = (*((uint32_t *) ((char *) dev_mem + page_offset + offset + sizeof(uint32_t))));
+	d |= tmp << sizeof(uint32_t) * 8;
+	return d;
+	// return *((uint64_t *) ((char *) dev_mem + page_offset + offset));
 }
 
 void hwio_device_mmap::write8(hwio_phys_addr_t offset, uint8_t val) {
@@ -87,7 +91,9 @@ void hwio_device_mmap::write32(hwio_phys_addr_t offset, uint32_t val) {
 
 void hwio_device_mmap::write64(hwio_phys_addr_t offset, uint64_t val) {
 	char * addr = ((char *) dev_mem + page_offset + offset);
-	*((uint64_t *) addr) = val;
+	//*(uint64_t *)addr = val;
+	*(uint32_t *) addr = (uint32_t) val;
+	*(uint32_t *) (addr + sizeof(uint32_t)) = val >> (sizeof(uint32_t) * 8);
 }
 
 std::string hwio_device_mmap::to_str() {
