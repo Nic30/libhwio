@@ -1,4 +1,4 @@
-# libhwio [![Build Status](https://travis-ci.org/srouquette/kodama.svg)](https://travis-ci.org/srouquette/kodama)
+# libhwio [![Build Status](https://travis-ci.org/Nic30/libhwio.svg)](https://travis-ci.org/Nic30/libhwio)
 
 libhwio is the library for unified access to hardware resources. This library is suitable for user space tools and libraries which are working with hardware accelerators. Original purpose was to share accelerators in FPGA. This library can also bypass access to hardware using ethernet or TCP. Remote Procedure Calls and simple telemetry is also present.
 
