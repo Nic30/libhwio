@@ -105,6 +105,7 @@ void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 	for (const option * o = long_opts; o->name != nullptr; o++) {
 		std::string opt = std::string("--") + o->name;
 		assert(o->has_arg == required_argument);
+		reducible_args.push_back(opt);
 	}
 
 	// search for options in argv
@@ -217,6 +218,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 		for (auto o: to_free) {
 			free(o);
 		}
+		free(_argv);
 		throw e;
 	}
 	// put back original state of getopt
