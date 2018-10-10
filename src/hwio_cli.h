@@ -14,6 +14,6 @@ ihwio_bus * hwio_init(int & argc, char * argv[]);
 
 std::vector<ihwio_dev*> hwio_select_devs_from_vector(const std::vector<ihwio_dev*>& devices, int index);
 
-char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_free);
+char ** copy_argv(int argc, char * argv[], std::vector<char *> & to_free);
 
 }
