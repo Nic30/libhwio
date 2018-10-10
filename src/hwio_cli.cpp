@@ -130,14 +130,13 @@ void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 	argc -= consumed_args.size();
 }
 
-char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_free) {
+char ** copy_argv(int argc, char * argv[], std::vector<char *> & to_free) {
 	char ** _argv = (char **) malloc(argc* sizeof(char *));
 	for (int i = 0; i < argc; i++) {
 		auto tmp =  strdup(argv[i]);
 		_argv[i] = tmp;
-		to_free.push_back((void*)tmp);
+		to_free.push_back(tmp);
 	}
-	to_free.push_back((void*) _argv);
 	return _argv;
 }
 
@@ -153,7 +152,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	};
 
 	// copy argv because options will be removed
-	std::vector<void *> to_free;
+	std::vector<char *> to_free;
 	char ** _argv = copy_argv(argc, argv, to_free);
 	std::vector<ihwio_bus *> buses;
 	const char * hwio_devicetree = nullptr;
@@ -226,6 +225,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	for (auto o: to_free) {
 		free(o);
 	}
+	free(_argv);
 
 	// consume potential leftover
 	if (hwio_devicetree != nullptr) {
