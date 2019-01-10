@@ -59,21 +59,25 @@ find_package(Boost REQUIRED)
 # define main library
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_library(hwio STATIC ${LIB_HWIO_INCLUDE} ${LIB_HWIO_SRC})
+
 target_include_directories(hwio
 	PUBLIC ${Boost_INCLUDE_DIRS}
-	PUBLIC ${LIB_HWIO_PRIVATE_INCLUDE_DIRS})
+	PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+	PRIVATE ${LIB_HWIO_PRIVATE_INCLUDE_DIRS}
+)
 
 # Define install files
-set(headers ${LIB_HWIO_INCLUDE})
+set_target_properties(hwio PROPERTIES PUBLIC_HEADER "${LIB_HWIO_INCLUDE}")
 
 install(TARGETS hwio
+    EXPORT hwio-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/hwio)
 
-install(TARGETS hwio EXPORT hwio-targets DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(EXPORT hwio-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/hwio)
-install(FILES ${headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/hwio")
-install(FILES hwio-config.cmake DESTINATION "${CMAKE_INSTALL_LIBDIR}/hwio")
+install(EXPORT hwio-targets
+    FILE hwio-config.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/hwio)
 
 
 ################################### TESTS ##################################
