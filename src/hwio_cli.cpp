@@ -17,7 +17,7 @@ const char * hwio_help_str() {
 	"   if no configuration file is specified ~/.hwio/config.json is used, if it does not exists /etc/hwio/config.json is used\n"//
 	"   --hwio_config <path.json>   load hwio configuration from json file\n"//
 	"   --hwio_devicetree <path>   root of devicetree to load device info from (def. \"/proc/device-tree\")\n"//
-	"   --hwio_device_mem <path>   file with memory space of devices, use with -hwio_devicetree (def. \"/dev/mem\")\n"//
+	"   --hwio_device_mem <path>   file with memory space of devices, use with --hwio_devicetree (def. \"/dev/mem\")\n"//
 	"   --hwio_remote <ip:port>    connect to remote hwio server\n"//
 	"   --hwio_json <path.json>      load devices from json file\n";
 }
@@ -105,6 +105,7 @@ void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 	for (const option * o = long_opts; o->name != nullptr; o++) {
 		std::string opt = std::string("--") + o->name;
 		assert(o->has_arg == required_argument);
+		reducible_args.push_back(opt);
 	}
 
 	// search for options in argv
@@ -130,14 +131,13 @@ void rm_comsumed_args(const option long_opts[], int & argc, char * argv[]) {
 	argc -= consumed_args.size();
 }
 
-char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_free) {
+char ** copy_argv(int argc, char * argv[], std::vector<char *> & to_free) {
 	char ** _argv = (char **) malloc(argc* sizeof(char *));
 	for (int i = 0; i < argc; i++) {
 		auto tmp =  strdup(argv[i]);
 		_argv[i] = tmp;
-		to_free.push_back((void*)tmp);
+		to_free.push_back(tmp);
 	}
-	to_free.push_back((void*) _argv);
 	return _argv;
 }
 
@@ -145,15 +145,15 @@ char ** copy_argv(int argc, char * argv[], std::vector<void *> & to_free) {
 ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	const option long_opts[] = { //
 			{ "hwio_config", required_argument, nullptr, 'c' },     //
-					{ "hwio_devicetree", required_argument, nullptr, 'd' }, //
-					{ "hwio_device_mem", required_argument, nullptr, 'm' }, //
-					{ "hwio_remote", required_argument, nullptr, 'r' },     //
-					{ "hwio_json", required_argument, nullptr, 'j' },        //
-					{ nullptr, no_argument, nullptr, 0 }                    //
-			};
+		    { "hwio_devicetree", required_argument, nullptr, 'd' }, //
+		    { "hwio_device_mem", required_argument, nullptr, 'm' }, //
+		    { "hwio_remote", required_argument, nullptr, 'r' },     //
+		    { "hwio_json", required_argument, nullptr, 'j' },       //
+		    { nullptr, no_argument, nullptr, 0 }                    //
+	};
 
 	// copy argv because options will be removed
-	std::vector<void *> to_free;
+	std::vector<char *> to_free;
 	char ** _argv = copy_argv(argc, argv, to_free);
 	std::vector<ihwio_bus *> buses;
 	const char * hwio_devicetree = nullptr;
@@ -162,6 +162,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 
 	int original_opterr = opterr;
 	opterr = 0;
+	optind = 0;
 	try {
 		while (true) {
 			const auto opt = getopt_long(argc, _argv, "", long_opts, nullptr);
@@ -217,6 +218,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 		for (auto o: to_free) {
 			free(o);
 		}
+		free(_argv);
 		throw e;
 	}
 	// put back original state of getopt
@@ -225,6 +227,7 @@ ihwio_bus * hwio_init(int & argc, char * argv[]) {
 	for (auto o: to_free) {
 		free(o);
 	}
+	free(_argv);
 
 	// consume potential leftover
 	if (hwio_devicetree != nullptr) {
