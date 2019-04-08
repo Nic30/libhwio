@@ -242,9 +242,10 @@ void HwioServer::handle_client_requests(int sd) {
 	Hwio_packet_header header;
 
 	int rx_data_size = 0;
+	uint8_t* data_ptr = reinterpret_cast<uint8_t*>(&header);
 	while (true) {
 		errno = 0;
-		int s = recv(sd, &header, sizeof(Hwio_packet_header), MSG_DONTWAIT);
+		int s = recv(sd, data_ptr+rx_data_size, sizeof(Hwio_packet_header) - rx_data_size, MSG_DONTWAIT);
 		if (s < 0) {
 			if (errno == EAGAIN || errno == EINTR) {
 				continue;
@@ -263,8 +264,29 @@ void HwioServer::handle_client_requests(int sd) {
 	}
 	if (rx_data_size != 0) {
 		bool err = false;
+		data_ptr = reinterpret_cast<uint8_t*>(&rx_buffer);
+		rx_data_size = 0;
 		if (header.body_len) {
-			rx_data_size = recv(sd, rx_buffer, header.body_len, MSG_DONTWAIT);
+			while (true) {
+				int s = recv(sd, data_ptr + rx_data_size, header.body_len - rx_data_size, MSG_DONTWAIT);
+				if (s < 0) {
+					if (errno == EAGAIN || errno == EINTR) {
+						continue;
+					} else {
+						// process as error
+						rx_data_size = 0;
+						break;
+					}
+				} else if (s == 0) {
+					// process as error
+					rx_data_size = 0;
+					break;
+				} else {
+					rx_data_size += s;
+					if (rx_data_size == header.body_len)
+						break;
+				}
+			}
 			if (rx_data_size == 0) {
 				respMeta = send_err(MALFORMED_PACKET,
 						std::string(
