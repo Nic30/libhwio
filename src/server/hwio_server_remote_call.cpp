@@ -37,5 +37,9 @@ HwioServer::PProcRes HwioServer::handle_remote_call(ClientInfo * client,
 				std::string("Call of plugin function raised and exception ")
 						+ err.what());
 	}
-	return PProcRes(false, sizeof(resp->header) + plugin.ret_size);
+	if (plugin.ret_size != 0) {
+            return PProcRes(false, sizeof(resp->header) + plugin.ret_size);
+        } else {
+            return PProcRes(false, 0);
+        }
 }
