@@ -83,6 +83,12 @@ struct PACKED DevQueryResp {
 	dev_id_t ids[MAX_ITEMS_PER_QUERY_RESP];
 };
 
+struct PACKED RdReqMulti {
+	dev_id_t devId;
+	physAddr_t addr;
+	uint16_t size;
+};
+
 // Command codes used by hwio server
 enum HWIO_CMD {
 	HWIO_CMD_READ = 1,  // read from device
@@ -110,6 +116,14 @@ enum HWIO_CMD {
 	// HwioFrame<RemoteCall>
 	HWIO_CMD_REMOTE_CALL_RET = 11,
 	// HwioFrame<RemoteCallRet>
+        HWIO_CMD_READ_MULTIPLE = 12,
+        // HwioFrame<RdReqMulti>
+        HWIO_CMD_READ_MULTIPLE_RESP = 13,
+        // HwioFrame<RdMultiResp>
+        HWIO_CMD_WRITE_MULTIPLE = 14,
+        // HwioFrame<WrReqMulti>
+        HWIO_CMD_WRITE_KEYHOLE = 15,
+        // HwioFrame<WrReqRange>
 };
 
 // error codes for messages used by hwio server

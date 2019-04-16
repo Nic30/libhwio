@@ -64,7 +64,7 @@ int hwio_client_to_server_con::rx_bytes(size_t size) {
 		result = recv(sockfd, rx_buffer + bytesRead, size - bytesRead, r_flag);
 		if (result < 0) {
 #ifdef HWIO_BUSY_WAIT_IO_CLIENT
-			if (errno == EAGAIN || errno == EINTR) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 				continue;
 			}
 #else
@@ -91,15 +91,28 @@ void hwio_client_to_server_con::rx_pckt(Hwio_packet_header * header) {
 
 void hwio_client_to_server_con::tx_pckt() {
 	Hwio_packet_header * f = reinterpret_cast<Hwio_packet_header*>(tx_buffer);
-	int err = send(sockfd, tx_buffer, f->body_len + sizeof(Hwio_packet_header),
-			0);
-
-	if (err < 0) {
-		std::stringstream ss;
-		ss
-				<< "hwio_client_to_server_con::tx_pckt, Unable to send message to server,"
-				<< strerror(errno);
-		throw hwio_error_rw(ss.str());
+	size_t bytesWr = 0;
+	int result;
+	size_t size = f->body_len + sizeof(Hwio_packet_header);
+	while (bytesWr < size) {
+		result = send(sockfd, tx_buffer + bytesWr, size - bytesWr, 0);
+		if (result < 0) {
+#ifdef HWIO_BUSY_WAIT_IO_CLIENT
+			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+				continue;
+			}
+#else
+			if (errno == EINTR) {
+				continue;
+			}
+#endif
+			std::stringstream ss;
+			ss
+					<< "hwio_client_to_server_con::tx_pckt, Unable to send message to server,"
+					<< strerror(errno);
+			throw hwio_error_rw(ss.str());
+		}
+		bytesWr += result;
 	}
 }
 

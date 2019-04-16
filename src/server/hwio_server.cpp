@@ -247,7 +247,7 @@ void HwioServer::handle_client_requests(int sd) {
 		errno = 0;
 		int s = recv(sd, data_ptr+rx_data_size, sizeof(Hwio_packet_header) - rx_data_size, MSG_DONTWAIT);
 		if (s < 0) {
-			if (errno == EAGAIN || errno == EINTR) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 				continue;
 			} else {
 				// process as error
@@ -270,7 +270,7 @@ void HwioServer::handle_client_requests(int sd) {
 			while (true) {
 				int s = recv(sd, data_ptr + rx_data_size, header.body_len - rx_data_size, MSG_DONTWAIT);
 				if (s < 0) {
-					if (errno == EAGAIN || errno == EINTR) {
+					if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 						continue;
 					} else {
 						// process as error
@@ -300,15 +300,25 @@ void HwioServer::handle_client_requests(int sd) {
 		if (!err) {
 			respMeta = handle_msg(client, header);
 			if (respMeta.tx_size) {
-				if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
-					respMeta = PProcRes(true, 0);
-					if (log_level >= logERROR) {
-						std::cerr
-								<< "[HWIO, server] Can not send response to client "
-								<< (client->id) << " (socket=" << (client->fd)
-								<< ")" << std::endl;
+				size_t bytesWr = 0;
+				int result;
+				while (bytesWr < respMeta.tx_size) {
+					result = send(sd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
+					if (result < 0) {
+						if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+							continue;
+						}
+						respMeta = PProcRes(true, 0);
+						if (log_level >= logERROR) {
+							std::cerr
+									<< "[HWIO, server] Can not send response to client "
+									<< (client->id) << " (socket=" << (client->fd)
+									<< ")" << std::endl;
+							break; 
+						}
 					}
-				}
+					bytesWr += result;
+                                }
 			}
 		}
 	}
