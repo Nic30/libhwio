@@ -66,6 +66,7 @@ private:
 	char tx_buffer[BUFFER_SIZE];
 
 	std::vector<struct pollfd> poll_fds;
+	std::vector<int> removed_poll_fds;
 	std::map<int, ClientInfo*> fd_to_client;
 
 	// meta-informations about clients in server
@@ -121,6 +122,7 @@ private:
 	 * Spot new ClientInfo instance in this->clients
 	 **/
 	ClientInfo * add_new_client(int socket);
+	void remove_client(int socket);
 
 	void handle_client_requests(int client_fd);
 

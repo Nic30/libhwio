@@ -2,6 +2,7 @@
 #include "hwio_remote_utils.h"
 
 #include <algorithm>
+#include <stdexcept>
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -157,6 +158,23 @@ ClientInfo * HwioServer::add_new_client(int socket) {
 	return client;
 }
 
+void HwioServer::remove_client(int socket) {
+	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(socket);
+	ClientInfo * client = nullptr;
+	if (_client == fd_to_client.end()) {
+		if (log_level >= logWARNING) {
+			std::cout << "[WARNING] " << "Socket: " << socket << " is not in client database." << endl;
+		}
+		return;
+	} else {
+		client = _client->second;
+	}
+	assert(client->fd == socket);
+	clients[client->id] = nullptr;
+	fd_to_client.erase(socket);
+	delete client;
+}
+
 size_t HwioServer::get_client_cnt() {
 	size_t i = 0;
 	for (auto c : clients) {
@@ -197,9 +215,11 @@ void HwioServer::pool_client_msgs() {
 		if ((e & POLLERR) | (e & POLLHUP) | (e & POLLNVAL)) {
 			if (fd.fd == master_socket) {
 				LOG_ERR << "Error on master socket" << std::endl;
-				continue;
+				throw std::runtime_error("Error condition on master socket! fd.revents = " + std::to_string(e));
 			} else {
 				LOG_ERR << "Error on socket" << fd.fd << std::endl;
+				remove_client(fd.fd);
+				removed_poll_fds.push_back(fd.fd);
 			}
 		} else if (fd.fd == master_socket) {
 			struct sockaddr_in address;
@@ -221,6 +241,20 @@ void HwioServer::pool_client_msgs() {
 		} else {
 			handle_client_requests(fd.fd);
 		}
+	}
+	if (removed_poll_fds.size() > 0) {
+		auto new_poll_fds = std::vector<struct pollfd>();
+		// Clean up after fd error condition
+		for (auto & rfd : removed_poll_fds) {
+			for (auto fd : poll_fds) {
+				if (fd.fd == rfd) {
+					continue;
+				}
+				new_poll_fds.push_back(fd);
+			}
+		}
+		poll_fds.swap(new_poll_fds);
+		removed_poll_fds.clear();
 	}
 }
 void HwioServer::handle_client_requests(int sd) {
@@ -336,25 +370,8 @@ void HwioServer::handle_client_requests(int sd) {
 					std::cout << "        " << s.to_str() << endl;
 			}
 		}
-		clients[client->id] = nullptr;
-		fd_to_client.erase(sd);
-		auto new_poll_fds = std::vector<struct pollfd>();
-		int i = 0;
-		for (auto fd : poll_fds) {
-			if (fd.fd == sd)
-				continue;
-			new_poll_fds.push_back(fd);
-			i++;
-		}
-		//	poll_fds.erase(
-		//			std::remove_if(poll_fds.begin(), poll_fds.end(),
-		//					[sd](struct pollfd item) {
-		//						return item.fd == sd;
-		//					}));
-		//
-		poll_fds = new_poll_fds;
-		//close(sd); is in desctructor
-		delete client;
+		remove_client(sd);
+		removed_poll_fds.push_back(sd);
 	}
 }
 
