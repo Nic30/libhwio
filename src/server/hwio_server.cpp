@@ -289,7 +289,9 @@ void HwioServer::handle_client_requests(int sd) {
 				break;
 			}
 		} else if (s == 0) {
-			return;
+			// process as error
+			rx_data_size = 0;
+			break;
 		} else {
 			rx_data_size += s;
 			if (rx_data_size == sizeof(Hwio_packet_header))
