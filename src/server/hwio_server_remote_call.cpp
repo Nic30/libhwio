@@ -18,7 +18,7 @@ HwioServer::PProcRes HwioServer::handle_remote_call(ClientInfo * client,
 	auto _plugin = plugins.find(fn_name);
 	if (_plugin == plugins.end())
 		return send_err(MALFORMED_PACKET,
-				std::string("REMOTE CALL: plugin ") + fn_name
+				std::string("REMOTE CALL: RPC function ") + fn_name
 						+ " not registered on server");
 	auto plugin = _plugin->second;
 
@@ -57,7 +57,7 @@ HwioServer::PProcRes HwioServer::handle_fast_remote_call(ClientInfo * client,
 	}
 	if(rc->fn_id >= plugins_fast.size()) {
             return send_err(MALFORMED_PACKET,
-				std::string("REMOTE CALL: plugin with id ") + std::to_string(rc->fn_id)
+				std::string("REMOTE CALL: RPC function with id ") + std::to_string(rc->fn_id)
 						+ " is not registered on server");
 	}
 	auto plugin = plugins_fast[rc->fn_id];
@@ -99,16 +99,12 @@ HwioServer::PProcRes HwioServer::handle_get_rpc_fn_id(ClientInfo * client, Hwio_
 		return send_err(ACCESS_DENIED, "GET REMOTE CALL ID: device is not allocated");
 	}
 	std::string fn_name((char *) rc->fn_name);
-	auto _plugin = plugins.find(fn_name);
-	if (_plugin != plugins.end()) {
-		auto plugin = _plugin->second;
-		for (uint32_t i = 0; i < plugins_fast.size(); i++) {
-			if (plugin == plugins_fast[i]) {
-				resp->body.found = true;
-				resp->body.fn_id = i;
-				break;
-			}
+	for (uint32_t i = 0; i < plugins_fast_names.size(); i++) {
+		if (fn_name == plugins_fast_names[i]) {
+			resp->body.found = true;
+			resp->body.fn_id = i;
+			break;
 		}
 	}
-	return PProcRes(false, sizeof(HwioFrame<GetRemoteCallIdResp>));
+	return PProcRes(false, sizeof(Hwio_packet_header) + resp->header.body_len);
 }
