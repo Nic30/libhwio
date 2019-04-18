@@ -86,7 +86,7 @@ HwioServer::PProcRes HwioServer::handle_fast_remote_call(ClientInfo * client,
 
 HwioServer::PProcRes HwioServer::handle_get_rpc_fn_id(ClientInfo * client, Hwio_packet_header header) {
 	if (header.body_len < sizeof(GetRemoteCallId))
-		return send_err(MALFORMED_PACKET, "READ: size too small");
+		return send_err(MALFORMED_PACKET, "GET REMOTE CALL ID: size too small");
 
 	auto rc = reinterpret_cast<const GetRemoteCallId*>(rx_buffer);
 	auto resp = reinterpret_cast<HwioFrame<GetRemoteCallIdResp>*>(tx_buffer);
@@ -96,7 +96,7 @@ HwioServer::PProcRes HwioServer::handle_get_rpc_fn_id(ClientInfo * client, Hwio_
 	resp->body.fn_id = -1;
 	ihwio_dev * dev = client_get_dev(client, rc->dev_id);
 	if (!dev) {
-		return send_err(ACCESS_DENIED, "REMOTE CALL: device is not allocated");
+		return send_err(ACCESS_DENIED, "GET REMOTE CALL ID: device is not allocated");
 	}
 	std::string fn_name((char *) rc->fn_name);
 	auto _plugin = plugins.find(fn_name);
