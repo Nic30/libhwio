@@ -126,7 +126,7 @@ hwio_device_remote::~hwio_device_remote() {
 }
 
 bool hwio_device_remote::is_rpc_available(const char * fn_name) {
-	auto buff = reinterpret_cast<HwioFrame<GetRemoteCallIdResp>*>(server->tx_buffer);
+	auto buff = reinterpret_cast<HwioFrame<GetRemoteCallId>*>(server->tx_buffer);
 	buff->header.command = HWIO_CMD_GET_REMOTE_CALL_ID;
 	strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
 	buff->body.dev_id = id;
@@ -142,7 +142,7 @@ bool hwio_device_remote::is_rpc_available(const char * fn_name) {
 }
 
 int32_t hwio_device_remote::get_rpc_fn_id(const char * fn_name) {
-	auto buff = reinterpret_cast<HwioFrame<GetRemoteCallIdResp>*>(server->tx_buffer);
+	auto buff = reinterpret_cast<HwioFrame<GetRemoteCallId>*>(server->tx_buffer);
 	buff->header.command = HWIO_CMD_GET_REMOTE_CALL_ID;
 	strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
 	buff->body.dev_id = id;

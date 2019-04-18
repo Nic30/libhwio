@@ -57,13 +57,13 @@ HwioServer::PProcRes HwioServer::handle_fast_remote_call(ClientInfo * client,
 	}
 	if(rc->fn_id >= plugins_fast.size()) {
             return send_err(MALFORMED_PACKET,
-				std::string("REMOTE CALL: plugin with id ") + fn_name
+				std::string("REMOTE CALL: plugin with id ") + fn_id
 						+ " is not registered on server");
 	}
 	auto plugin = plugins_fast[rc->fn_id];
 
 	if (log_level >= logDEBUG) {
-		std::cout << "[DEBUG] REMOTE CALL:" << (int) rc->dev_id << rc->fn_name
+		std::cout << "[DEBUG] REMOTE CALL:" << (int) rc->dev_id << rc->fn_id
 				<< endl;
 	}
 
@@ -89,9 +89,9 @@ HwioServer::PProcRes HwioServer::handle_get_rpc_fn_id(ClientInfo * client, Hwio_
 		return send_err(MALFORMED_PACKET, "READ: size too small");
 
 	auto rc = reinterpret_cast<const GetRemoteCallId*>(rx_buffer);
-	auto resp = reinterpret_cast<HwioFrame<RemoteCallRet>*>(tx_buffer);
+	auto resp = reinterpret_cast<HwioFrame<GetRemoteCallIdResp>*>(tx_buffer);
 	resp->header.command = HWIO_CMD_GET_REMOTE_CALL_ID_RESP;
-	resp->header.body_len = sizeof(RemoteCallRet);
+	resp->header.body_len = sizeof(GetRemoteCallIdResp);
 	resp->body.found = false;
 	resp->body.fn_id = -1;
 	ihwio_dev * dev = client_get_dev(client, rc->dev_id);
@@ -102,7 +102,7 @@ HwioServer::PProcRes HwioServer::handle_get_rpc_fn_id(ClientInfo * client, Hwio_
 	auto _plugin = plugins.find(fn_name);
 	if (_plugin != plugins.end()) {
 		auto plugin = _plugin->second;
-		for (int32_t i = 0; i < plugins_fast.size(); i++) {
+		for (uint32_t i = 0; i < plugins_fast.size(); i++) {
 			if (plugin == plugins_fast[i]) {
 				resp->body.found = true;
 				resp->body.fn_id = i;
@@ -110,5 +110,5 @@ HwioServer::PProcRes HwioServer::handle_get_rpc_fn_id(ClientInfo * client, Hwio_
 			}
 		}
 	}
-	return PProcRes(false, sizeof(HwioFrame<RemoteCallRet>));
+	return PProcRes(false, sizeof(HwioFrame<GetRemoteCallIdResp>));
 }

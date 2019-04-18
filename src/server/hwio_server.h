@@ -159,8 +159,8 @@ public:
 		bool operator == (const plugin_info_s &other) const {
 			return (this->args_size == other.args_size) && 
 				(this->ret_size == other.ret_size) &&
-				(*(this->fn.target<void (ihwio_dev*, void *, void *)>) == 
-				*(other.fn.target<void (ihwio_dev*, void *, void *)>);
+				(*(this->fn.target<void (ihwio_dev*, void *, void *)>()) == 
+				*(other.fn.target<void (ihwio_dev*, void *, void *)>()));
 		}
 	};
 	std::map<const std::string, plugin_info_s> plugins;
