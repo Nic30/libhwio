@@ -130,7 +130,7 @@ bool hwio_device_remote::is_rpc_available(const char * fn_name) {
 	buff->header.command = HWIO_CMD_GET_REMOTE_CALL_ID;
 	strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
 	buff->body.dev_id = id;
-	buff->header.body_len = sizeof(GetRemoteCallIdResp);
+	buff->header.body_len = sizeof(GetRemoteCallId);
 	server->tx_pckt();
 	Hwio_packet_header h;
 	server->rx_pckt(&h);
@@ -146,7 +146,7 @@ int32_t hwio_device_remote::get_rpc_fn_id(const char * fn_name) {
 	buff->header.command = HWIO_CMD_GET_REMOTE_CALL_ID;
 	strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
 	buff->body.dev_id = id;
-	buff->header.body_len = sizeof(GetRemoteCallIdResp);
+	buff->header.body_len = sizeof(GetRemoteCallId);
 	server->tx_pckt();
 	Hwio_packet_header h;
 	server->rx_pckt(&h);
