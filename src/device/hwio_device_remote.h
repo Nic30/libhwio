@@ -90,7 +90,7 @@ public:
 			memcpy(buff->body.args, args, sizeof(ARGS_T));
 		}
 
-		buff->header.body_len = sizeof(RemoteCallFast) - 1 + ARGS_T_size;
+		buff->header.body_len = sizeof(RemoteCallFast) + ARGS_T_size;
 
 		server->tx_pckt();
 		Hwio_packet_header h;
@@ -119,7 +119,7 @@ public:
 			memcpy(buff->body.args, args, sizeof(ARGS_T));
 		}
 
-		buff->header.body_len = sizeof(RemoteCallFast) - 1 + ARGS_T_size;
+		buff->header.body_len = sizeof(RemoteCallFast) + ARGS_T_size;
 
 		server->tx_pckt();
 	}
