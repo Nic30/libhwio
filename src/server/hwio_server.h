@@ -23,6 +23,7 @@
 #include <map>
 #include <type_traits>
 #include <functional>
+#include <vector>
 
 #include "hwio_remote.h"
 #include "ihwio_dev.h"
@@ -111,6 +112,16 @@ private:
 	 * HWIO remote call of plugin function
 	 */
 	PProcRes handle_remote_call(ClientInfo * client, Hwio_packet_header header);
+        
+        /*
+	 * Handle query for fast RPC function ID
+	 * */
+	PProcRes handle_get_rpc_fn_id(ClientInfo * client, Hwio_packet_header header);
+        
+	/**
+	 * HWIO fast remote call of plugin function
+	 */
+	PProcRes handle_fast_remote_call(ClientInfo * client, Hwio_packet_header header);
 
 	/*
 	 * Process message from client
@@ -145,8 +156,15 @@ public:
 		plugin_fn_t fn;
 		size_t args_size;
 		size_t ret_size;
+		bool operator == (const plugin_info_s &other) const {
+			return (this->args_size == other.args_size) && 
+				(this->ret_size == other.ret_size) &&
+				(*(this->fn.target<void (ihwio_dev*, void *, void *)>) == 
+				*(other.fn.target<void (ihwio_dev*, void *, void *)>);
+		}
 	};
 	std::map<const std::string, plugin_info_s> plugins;
+	std::vector<plugin_info_s> plugins_fast;
 	HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses);
 	void prepare_server_socket();
 
@@ -175,6 +193,7 @@ public:
 		else
 			p.ret_size = sizeof(RET_T);
 		plugins[name] = p;
+		plugins_fast.push_back(p);
 	}
 	~HwioServer();
 };

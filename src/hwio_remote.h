@@ -50,6 +50,22 @@ struct PACKED RemoteCall {
 	char args[0]; // arbitrary data size
 };
 
+struct PACKED RemoteCallFast {
+	dev_id_t dev_id;
+	uint32_t fn_id;
+	char args[0]; // arbitrary data size
+};
+
+struct PACKED GetRemoteCallId {
+	dev_id_t dev_id;
+	uint8_t fn_name[MAX_NAME_LEN];
+};
+
+struct PACKED GetRemoteCallIdResp {
+	bool found;
+	uint32_t fn_id;
+};
+
 struct PACKED RemoteCallRet {
 	uint8_t ret[0]; // arbitrary data size
 };
@@ -124,6 +140,12 @@ enum HWIO_CMD {
         // HwioFrame<WrReqMulti>
         HWIO_CMD_WRITE_KEYHOLE = 15,
         // HwioFrame<WrReqRange>
+        HWIO_CMD_REMOTE_CALL_FAST = 16,
+        // HwioFrame<RemoteCallFast>
+        HWIO_CMD_GET_REMOTE_CALL_ID = 17,
+        // HwioFrame<GetRemoteCallId>
+        HWIO_CMD_GET_REMOTE_CALL_ID_RESP = 17,
+        // HwioFrame<GetRemoteCallIdResp>
 };
 
 // error codes for messages used by hwio server

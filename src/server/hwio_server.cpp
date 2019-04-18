@@ -84,6 +84,9 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 	HWIO_CMD cmd = static_cast<HWIO_CMD>(header.command);
 
 	switch (cmd) {
+	case HWIO_CMD_REMOTE_CALL_FAST:
+		return handle_fast_remote_call(client, header);
+            
 	case HWIO_CMD_READ:
 		return handle_read(client, header);
 
@@ -116,6 +119,9 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 		}
 		return device_lookup_resp(client, q, cnt, tx_buffer);
 
+	case HWIO_CMD_GET_REMOTE_CALL_ID:
+		return handle_get_rpc_fn_id(client, header);
+                
 	case HWIO_CMD_BYE:
 		return PProcRes(true, 0);
 
