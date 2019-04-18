@@ -57,7 +57,7 @@ HwioServer::PProcRes HwioServer::handle_fast_remote_call(ClientInfo * client,
 	}
 	if(rc->fn_id >= plugins_fast.size()) {
             return send_err(MALFORMED_PACKET,
-				std::string("REMOTE CALL: plugin with id ") + fn_id
+				std::string("REMOTE CALL: plugin with id ") + std::to_string(rc->fn_id)
 						+ " is not registered on server");
 	}
 	auto plugin = plugins_fast[rc->fn_id];
