@@ -385,20 +385,20 @@ void HwioServer::handle_client_requests(int sd) {
 
 bool HwioServer::read_from_socket(ClientInfo * client) {
     char * rd_ptr = client->rx_buffer.buffer;
-    size_t rd_len = RX_BUFFER_SIZE;
+    size_t rd_len = RxBuffer::RX_BUFFER_SIZE;
 
     if (client->rx_buffer.curr_len > 0) {
-        if (client->rx_buffer.curr_ptr != client->rx_buffer.rx_buffer) {
-           client->rx_buffer.curr_ptr = memcpy(client->rx_buffer.rx_buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len);
+        if (client->rx_buffer.curr_ptr != client->rx_buffer.buffer) {
+           client->rx_buffer.curr_ptr = memcpy(client->rx_buffer.buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len);
         }
         rd_ptr = client->rx_buffer.curr_ptr + client->rx_buffer.curr_len;
         rd_len -= client->rx_buffer.curr_len;
     }
     while (true) {
         errno = 0;
-        int s = recv(socket, rd_ptr, rd_len, MSG_DONTWAIT);
+        int s = recv(client->sd, rd_ptr, rd_len, MSG_DONTWAIT);
         if (s > 0) {
-            curr_len += s;
+            client->rx_buffer.curr_len += s;
             return true;
         } else {
             if (s < 0) {
@@ -430,7 +430,7 @@ void HwioServer::parse_msgs(ClientInfo * client) {
                 size_t bytesWr = 0;
                 int result;
                 while (bytesWr < respMeta.tx_size) {
-                    result = send(sd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
+                    result = send(client->sd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
                     if (result < 0) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
                             continue;
@@ -464,8 +464,8 @@ void HwioServer::parse_msgs(ClientInfo * client) {
                             std::cout << "        " << s.to_str() << endl;
                     }
                 }
-                remove_client(sd);
-                removed_poll_fds.push_back(sd);
+                remove_client(client->sd);
+                removed_poll_fds.push_back(client->sd);
             }
         }
         // Message is incomplete break the cycle

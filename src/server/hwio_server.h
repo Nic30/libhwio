@@ -34,12 +34,14 @@ namespace hwio {
 class RxBuffer {
     friend class HwioServer;
     private:
-        const size_t RX_BUFFER_SIZE = 65536;
+        static const size_t RX_BUFFER_SIZE = 65536;
         char buffer[RX_BUFFER_SIZE];
         char *curr_ptr;
         size_t curr_len;
     public:
-        RxBuffer() : curr_ptr(buffer), curr_len(0), server() {}
+        RxBuffer() : curr_len(0) {
+            curr_ptr = buffer;
+        }
         ~RxBuffer() {}
 };
     
