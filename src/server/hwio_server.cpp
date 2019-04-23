@@ -389,14 +389,14 @@ bool HwioServer::read_from_socket(ClientInfo * client) {
 
     if (client->rx_buffer.curr_len > 0) {
         if (client->rx_buffer.curr_ptr != client->rx_buffer.buffer) {
-           client->rx_buffer.curr_ptr = memcpy(client->rx_buffer.buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len);
+           client->rx_buffer.curr_ptr = static_cast<char*>(memcpy(client->rx_buffer.buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len));
         }
         rd_ptr = client->rx_buffer.curr_ptr + client->rx_buffer.curr_len;
         rd_len -= client->rx_buffer.curr_len;
     }
     while (true) {
         errno = 0;
-        int s = recv(client->sd, rd_ptr, rd_len, MSG_DONTWAIT);
+        int s = recv(client->fd, rd_ptr, rd_len, MSG_DONTWAIT);
         if (s > 0) {
             client->rx_buffer.curr_len += s;
             return true;
@@ -430,7 +430,7 @@ void HwioServer::parse_msgs(ClientInfo * client) {
                 size_t bytesWr = 0;
                 int result;
                 while (bytesWr < respMeta.tx_size) {
-                    result = send(client->sd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
+                    result = send(client->fd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
                     if (result < 0) {
                         if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
                             continue;
@@ -464,8 +464,8 @@ void HwioServer::parse_msgs(ClientInfo * client) {
                             std::cout << "        " << s.to_str() << endl;
                     }
                 }
-                remove_client(client->sd);
-                removed_poll_fds.push_back(client->sd);
+                remove_client(client->fd);
+                removed_poll_fds.push_back(client->fd);
             }
         }
         // Message is incomplete break the cycle
