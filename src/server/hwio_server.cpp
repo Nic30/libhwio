@@ -245,7 +245,7 @@ void HwioServer::pool_client_msgs() {
 			}
 			add_new_client(new_socket);
 		} else {
-			handle_client_requests(fd.fd);
+			handle_multiple_client_requests(fd.fd);
 		}
 	}
 	if (removed_poll_fds.size() > 0) {
@@ -382,6 +382,131 @@ void HwioServer::handle_client_requests(int sd) {
 		removed_poll_fds.push_back(sd);
 	}
 }
+
+bool HwioServer::read_from_socket(ClientInfo * client) {
+    char * rd_ptr = client->rx_buffer.buffer;
+    size_t rd_len = RX_BUFFER_SIZE;
+
+    if (client->rx_buffer.curr_len > 0) {
+        if (client->rx_buffer.curr_ptr != client->rx_buffer.rx_buffer) {
+           client->rx_buffer.curr_ptr = memcpy(client->rx_buffer.rx_buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len);
+        }
+        rd_ptr = client->rx_buffer.curr_ptr + client->rx_buffer.curr_len;
+        rd_len -= client->rx_buffer.curr_len;
+    }
+    while (true) {
+        errno = 0;
+        int s = recv(socket, rd_ptr, rd_len, MSG_DONTWAIT);
+        if (s > 0) {
+            curr_len += s;
+            return true;
+        } else {
+            if (s < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                    continue;
+                } else {
+                    // process as error
+                    return false;
+                }
+            } else {
+                // process as error
+                return false;
+            }
+        }
+    }
+    // Should never happen
+    return false;
+}
+
+void HwioServer::parse_msgs(ClientInfo * client) {
+    while (client->rx_buffer.curr_len >= sizeof(Hwio_packet_header)) {
+        Hwio_packet_header *header = reinterpret_cast<Hwio_packet_header*>(client->rx_buffer.curr_ptr);
+        PProcRes respMeta(true, 0);
+        size_t msg_len = sizeof(Hwio_packet_header) + header->body_len;
+        if (msg_len <= client->rx_buffer.curr_len) {
+            rx_buffer = client->rx_buffer.curr_ptr + header->body_len;
+            respMeta = handle_msg(client, *header);
+            if (respMeta.tx_size) {
+                size_t bytesWr = 0;
+                int result;
+                while (bytesWr < respMeta.tx_size) {
+                    result = send(sd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
+                    if (result < 0) {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                            continue;
+                        }
+                        respMeta = PProcRes(true, 0);
+                        if (log_level >= logERROR) {
+                            std::cerr
+                                    << "[HWIO, server] Can not send response to client "
+                                    << (client->id) << " (socket=" << (client->fd)
+                                    << ")" << std::endl;
+                            break; 
+                        }
+                    }
+                    bytesWr += result;
+                }
+            }
+            client->rx_buffer.curr_ptr += msg_len;
+            client->rx_buffer.curr_len -= msg_len;
+            if (!respMeta.disconnect) {
+                continue;
+            } else {
+                // Somebody disconnected, get his details and print
+                // packet had wrong format or connection was disconnected.
+                if (log_level >= logINFO) {
+                    std::cout << "[INFO] " << "Client " << client->id << " socket:"
+                            << client->fd << " disconnected" << endl;
+
+                    for (auto d : client->devices) {
+                        std::cout << "    owned device:" << endl;
+                        for (auto & s : d->get_spec())
+                            std::cout << "        " << s.to_str() << endl;
+                    }
+                }
+                remove_client(sd);
+                removed_poll_fds.push_back(sd);
+            }
+        }
+        // Message is incomplete break the cycle
+        break;
+    }
+}
+
+void HwioServer::handle_multiple_client_requests(int sd) {
+	// else its some IO operation on some other socket
+	//Check if it was for closing , and also read the
+	//incoming message
+	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(sd);
+	ClientInfo * client = nullptr;
+	if (_client == fd_to_client.end()) {
+		client = add_new_client(sd);
+	} else {
+		client = _client->second;
+	}
+	//std::cout << "handle_client_requests:" << sd << " " << client->id
+	//		<< std::endl;
+	assert(client->fd == sd);
+	if(read_from_socket(client)) {
+		parse_msgs(client);
+	} else {
+		// Somebody disconnected, get his details and print
+		// packet had wrong format or connection was disconnected.
+		if (log_level >= logINFO) {
+			std::cout << "[INFO] " << "Client " << client->id << " socket:"
+					<< client->fd << " disconnected" << endl;
+
+			for (auto d : client->devices) {
+				std::cout << "    owned device:" << endl;
+				for (auto & s : d->get_spec())
+					std::cout << "        " << s.to_str() << endl;
+			}
+		}
+		remove_client(sd);
+		removed_poll_fds.push_back(sd);
+        }
+}
+
 
 HwioServer::~HwioServer() {
 	if (log_level >= logINFO)

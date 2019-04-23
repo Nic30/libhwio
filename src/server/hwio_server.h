@@ -31,10 +31,23 @@
 
 namespace hwio {
 
+class RxBuffer {
+    friend class HwioServer;
+    private:
+        const size_t RX_BUFFER_SIZE = 65536;
+        char buffer[RX_BUFFER_SIZE];
+        char *curr_ptr;
+        size_t curr_len;
+    public:
+        RxBuffer() : curr_ptr(buffer), curr_len(0), server() {}
+        ~RxBuffer() {}
+};
+    
 class ClientInfo {
 public:
 	int id;
 	int fd;
+	RxBuffer rx_buffer;
 	std::vector<ihwio_dev *> devices;
 	ClientInfo(int id, int _socket) :
 			id(id), fd(_socket), devices() {
@@ -63,7 +76,8 @@ private:
 	int master_socket;
 
 	// buffers for rx/tx
-	char rx_buffer[BUFFER_SIZE];
+	//char rx_buffer[BUFFER_SIZE];
+	char* rx_buffer;
 	char tx_buffer[BUFFER_SIZE];
 
 	std::vector<struct pollfd> poll_fds;
@@ -136,6 +150,10 @@ private:
 	void remove_client(int socket);
 
 	void handle_client_requests(int client_fd);
+
+	bool read_from_socket(ClientInfo * client);
+	void parse_msgs(ClientInfo * client);
+	void handle_multiple_client_requests(int client_fd);
 
 	static constexpr unsigned MAX_PENDING_CONNECTIONS = 32;
 	static constexpr unsigned POLL_TIMEOUT_MS = 100;
