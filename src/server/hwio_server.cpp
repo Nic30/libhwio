@@ -428,7 +428,7 @@ void HwioServer::parse_msgs(ClientInfo * client) {
         size_t msg_len = sizeof(Hwio_packet_header) + header->body_len;
         if (msg_len <= client->rx_buffer.curr_len) {
             rx_buffer = client->rx_buffer.curr_ptr + header->body_len;
-            std::cout << "parse_msgs:" << msg_len << " " <<  header->command << " " << header->body_len << " " << (void)rx_buffer << std::endl;
+            std::cout << "parse_msgs:" << msg_len << " " <<  header->command << " " << header->body_len << " " << (void*)rx_buffer << std::endl;
             respMeta = handle_msg(client, *header);
             if (respMeta.tx_size) {
                 size_t bytesWr = 0;
