@@ -30,10 +30,10 @@ HwioServer::PProcRes HwioServer::device_lookup_resp(ClientInfo * client,
 			reinterpret_cast<HwioFrame<DevQueryResp>*>(tx_buffer);
 	resp->header.command = HWIO_CMD_QUERY_RESP;
         std::cerr << cnt << std::endl;
-        std::cerr << q->device_name << std::endl;
-        std::cerr << q->vendor_name << std::endl;
-        std::cerr << q->type_name << std::endl;
-        std::cerr << q->version << std::endl;
+        std::cerr << q->items[0].device_name << std::endl;
+        std::cerr << q->items[0].vendor_name << std::endl;
+        std::cerr << q->items[0].type_name << std::endl;
+        std::cerr << q->items[0].version << std::endl;
         
 	vector<ihwio_dev *> result;
 	for (auto & bus : buses) {
