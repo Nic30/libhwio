@@ -391,7 +391,7 @@ bool HwioServer::read_from_socket(ClientInfo * client) {
         if (client->rx_buffer.curr_ptr != client->rx_buffer.buffer) {
            memcpy(client->rx_buffer.buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len);
         }
-        rd_ptr = client->rx_buffer.curr_ptr + client->rx_buffer.curr_len;
+        rd_ptr += client->rx_buffer.curr_len;
         rd_len -= client->rx_buffer.curr_len;
     }
     client->rx_buffer.curr_ptr = client->rx_buffer.buffer;
