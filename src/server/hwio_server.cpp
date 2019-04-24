@@ -256,13 +256,16 @@ void HwioServer::pool_client_msgs() {
 	if (removed_poll_fds.size() > 0) {
 		auto new_poll_fds = std::vector<struct pollfd>();
 		// Clean up after fd error condition
-		for (auto & rfd : removed_poll_fds) {
-			for (auto fd : poll_fds) {
+		for (auto & fd : poll_fds) {
+			bool add = true;
+			for (auto & rfd : removed_poll_fds) {
 				if (fd.fd == rfd) {
-					continue;
+					add = false;
+					break;
 				}
-				new_poll_fds.push_back(fd);
 			}
+			if (add)
+				new_poll_fds.push_back(fd);
 		}
 		poll_fds.swap(new_poll_fds);
 		removed_poll_fds.clear();
