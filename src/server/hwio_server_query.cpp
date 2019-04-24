@@ -41,7 +41,7 @@ HwioServer::PProcRes HwioServer::device_lookup_resp(ClientInfo * client,
 			result.push_back(dev);
 		}
 	}
-	std::cerr << result.length() << std::endl;
+	std::cerr << result.size() << std::endl;
 	int i = 0;
 	resp->header.body_len = 0;
 	for (auto dev : result) {
