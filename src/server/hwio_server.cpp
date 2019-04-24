@@ -395,13 +395,13 @@ bool HwioServer::read_from_socket(ClientInfo * client) {
         rd_len -= client->rx_buffer.curr_len;
     }
     client->rx_buffer.curr_ptr = client->rx_buffer.buffer;
-    std::cout << "read_from_socket:" << (void*)client->rx_buffer.buffer << " " << (void*)rd_ptr << " " << rd_len << std::endl;
+//     std::cout << "read_from_socket:" << (void*)client->rx_buffer.buffer << " " << (void*)rd_ptr << " " << rd_len << std::endl;
     while (true) {
         errno = 0;
         int s = recv(client->fd, rd_ptr, rd_len, MSG_DONTWAIT);
         if (s > 0) {
             client->rx_buffer.curr_len += s;
-            std::cout << "read_from_socket:" << s << " " << client->rx_buffer.curr_len << std::endl;
+//             std::cout << "read_from_socket:" << s << " " << client->rx_buffer.curr_len << std::endl;
             return true;
         } else {
             if (s < 0) {
@@ -424,12 +424,12 @@ bool HwioServer::read_from_socket(ClientInfo * client) {
 void HwioServer::parse_msgs(ClientInfo * client) {
     while (client->rx_buffer.curr_len >= sizeof(Hwio_packet_header)) {
         Hwio_packet_header *header = reinterpret_cast<Hwio_packet_header*>(client->rx_buffer.curr_ptr);
-        std::cout << "parse_msgs:" << (void*)header << " " << (void*)client->rx_buffer.curr_ptr << " " << client->rx_buffer.curr_len << std::endl;
+//         std::cout << "parse_msgs:" << (void*)header << " " << (void*)client->rx_buffer.curr_ptr << " " << client->rx_buffer.curr_len << std::endl;
         PProcRes respMeta(true, 0);
         size_t msg_len = sizeof(Hwio_packet_header) + header->body_len;
         if (msg_len <= client->rx_buffer.curr_len) {
             rx_buffer = client->rx_buffer.curr_ptr + sizeof(Hwio_packet_header);
-            std::cout << "parse_msgs:" << msg_len << " " <<  (int)header->command << " " << header->body_len << " " << (void*)rx_buffer << std::endl;
+//             std::cout << "parse_msgs:" << msg_len << " " <<  (int)header->command << " " << header->body_len << " " << (void*)rx_buffer << std::endl;
             respMeta = handle_msg(client, *header);
             if (respMeta.tx_size) {
                 size_t bytesWr = 0;
@@ -454,7 +454,7 @@ void HwioServer::parse_msgs(ClientInfo * client) {
             }
             client->rx_buffer.curr_ptr += msg_len;
             client->rx_buffer.curr_len -= msg_len;
-            std::cout << "parse_msgs:" << (void*)client->rx_buffer.curr_ptr << " " << client->rx_buffer.curr_len << std::endl;
+//             std::cout << "parse_msgs:" << (void*)client->rx_buffer.curr_ptr << " " << client->rx_buffer.curr_len << std::endl;
             if (!respMeta.disconnect) {
                 continue;
             } else {
@@ -490,7 +490,7 @@ void HwioServer::handle_multiple_client_requests(int sd) {
 	} else {
 		client = _client->second;
 	}
-	std::cout << "handle_client_requests:" << sd << " " << client->id
+// 	std::cout << "handle_client_requests:" << sd << " " << client->id
 			<< std::endl;
 	assert(client->fd == sd);
 	if(read_from_socket(client)) {
