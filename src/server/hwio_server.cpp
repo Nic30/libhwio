@@ -228,7 +228,7 @@ void HwioServer::pool_client_msgs() {
 				LOG_ERR << "Error on master socket" << std::endl;
 				throw std::runtime_error("Error condition on master socket! fd.revents = " + std::to_string(e));
 			} else {
-				LOG_ERR << "Error on socket" << fd.fd << std::endl;
+				LOG_ERR << "Error on socket " << fd.fd << " fd.revents = " << std::to_string(e) << std::endl;
 				remove_client(fd.fd);
 				removed_poll_fds.push_back(fd.fd);
 			}
