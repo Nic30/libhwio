@@ -202,9 +202,14 @@ void HwioServer::pool_client_msgs() {
 		// timeout
 		return;
 	} else if (err < 0) {
+		if (errno == EINTR) {
+			if (log_level >= logINFO)
+				LOG_ERR << "ppoll interrupted by signal" << endl;
+			return;
+		}
 		if (log_level >= logERROR)
-			LOG_ERR << "poll error" << endl;
-		return;
+			LOG_ERR << "ppoll error" << endl;
+		throw std::runtime_error("Error condition upon execution of ppoll()! errno = " + std::to_string(errno));
 	}
 
 	// If something happened on the master socket,
