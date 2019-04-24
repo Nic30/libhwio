@@ -491,7 +491,7 @@ void HwioServer::handle_multiple_client_requests(int sd) {
 		client = _client->second;
 	}
 // 	std::cout << "handle_client_requests:" << sd << " " << client->id
-			<< std::endl;
+// 			<< std::endl;
 	assert(client->fd == sd);
 	if(read_from_socket(client)) {
 		parse_msgs(client);
