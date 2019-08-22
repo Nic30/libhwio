@@ -75,6 +75,11 @@ install(EXPORT hwio-targets DESTINATION ${CMAKE_INSTALL_LIBDIR}/hwio)
 install(FILES ${headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/hwio")
 install(FILES hwio-config.cmake DESTINATION "${CMAKE_INSTALL_LIBDIR}/hwio")
 
+SET(CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}-dev")
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Michal Orsak <michal.o.socials@gmail.com>")
+SET(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+INCLUDE(CPack)
 
 ################################### TESTS ##################################
 if(CMAKE_TESTING_ENABLED)
