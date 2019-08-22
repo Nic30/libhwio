@@ -32,11 +32,10 @@ While developing you can use [libhwio-devmem](https://github.com/Nic30/libhwio-d
 * libhwio v0.5 was complete rewrite of [libhwio 0.4](http://www.fit.vutbr.cz/research/view_product.php?id=274) rewrite was radical, only name has remained. Dropped explicit support for Cesnet, RSoC, SProbe, xtcl. Added support for remote access, json, C++, CMake.
 
 
-
 ## libhwio configs
 
 libhwio does not contains any hardcoded information about hardware as it used to be in HWIO v0.4 for RSoC.
-Instead configuration is loaded from xml config files.
+Instead configuration is loaded from json config files.
 These files are ~/.hwio/config.json /etc/hwio/config.json
 This files currently contains definitions of busses where libhwio should search for devices.
 (Example configs are in src/test_samples) Configuration, and configuration file can be also overloaded from CLI.
@@ -44,10 +43,11 @@ This files currently contains definitions of busses where libhwio should search 
 
 ## Simlar opensource projects
 
-* FPGA Device Feature List in Linux kernel 4.19
+* FPGA Device Feature List in Linux kernel 4.19+
 * [opae-sdk](https://github.com/OPAE/opae-sdk) - sdk for sharing of FPGA accelerators on Intel Xeon processors (only local, userspace)
 * [snap](https://github.com/open-power/snap) - framework for passing actions to hardware accelerators, CAPI, HLS, userspace, IBM
-
+* [ipbus](https://github.com/ipbus) - a simple packet-based control protocol for reading and modifying memory-mapped resources within FPGA
+* [fusd](https://github.com/Godzil/fusd) - Framework for User-Space Devices
 
 ## installation
 ```

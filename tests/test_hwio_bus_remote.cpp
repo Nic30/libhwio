@@ -158,8 +158,18 @@ void _test_device_rw(ihwio_dev * dev) {
 		buff_ref[i] = i + 1;
 
 	dev->write(0, buff_ref, 32 * sizeof(uint32_t));
-	for (int i = 0; i < 32 * 4; i++) {
-		BOOST_CHECK_EQUAL(dev->read8(i * sizeof(uint8_t)), i + 1);
+	for (size_t i = 0; i < 32 * sizeof(uint32_t); i++) {
+		BOOST_CHECK_EQUAL(dev->read8(i * sizeof(uint8_t)), buff_ref[i]);
+	}
+
+	for (int i = 0; i < 32; i++) {
+		uint32_t tmp = reinterpret_cast<uint32_t*>(buff_ref)[i];
+		BOOST_CHECK_EQUAL(dev->read32(i * sizeof(uint32_t)), tmp);
+	}
+
+	for (int i = 0; i < 32/2; i++) {
+		uint64_t tmp = reinterpret_cast<uint64_t*>(buff_ref)[i];
+		BOOST_CHECK_EQUAL(dev->read64(i * sizeof(uint64_t)), tmp);
 	}
 
 	dev->read(0, buff, 32 * sizeof(uint32_t));
