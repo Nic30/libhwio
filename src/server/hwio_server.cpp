@@ -2,6 +2,7 @@
 #include "hwio_remote_utils.h"
 
 #include <algorithm>
+#include <stdexcept>
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -83,6 +84,9 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 	HWIO_CMD cmd = static_cast<HWIO_CMD>(header.command);
 
 	switch (cmd) {
+	case HWIO_CMD_REMOTE_CALL_FAST:
+		return handle_fast_remote_call(client, header);
+            
 	case HWIO_CMD_READ:
 		return handle_read(client, header);
 
@@ -115,6 +119,9 @@ HwioServer::PProcRes HwioServer::handle_msg(ClientInfo * client,
 		}
 		return device_lookup_resp(client, q, cnt, tx_buffer);
 
+	case HWIO_CMD_GET_REMOTE_CALL_ID:
+		return handle_get_rpc_fn_id(client, header);
+                
 	case HWIO_CMD_BYE:
 		return PProcRes(true, 0);
 
@@ -157,6 +164,23 @@ ClientInfo * HwioServer::add_new_client(int socket) {
 	return client;
 }
 
+void HwioServer::remove_client(int socket) {
+	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(socket);
+	ClientInfo * client = nullptr;
+	if (_client == fd_to_client.end()) {
+		if (log_level >= logWARNING) {
+			std::cout << "[WARNING] " << "Socket: " << socket << " is not in client database." << endl;
+		}
+		return;
+	} else {
+		client = _client->second;
+	}
+	assert(client->fd == socket);
+	clients[client->id] = nullptr;
+	fd_to_client.erase(socket);
+	delete client;
+}
+
 size_t HwioServer::get_client_cnt() {
 	size_t i = 0;
 	for (auto c : clients) {
@@ -178,9 +202,14 @@ void HwioServer::pool_client_msgs() {
 		// timeout
 		return;
 	} else if (err < 0) {
+		if (errno == EINTR) {
+			if (log_level >= logINFO)
+				LOG_ERR << "ppoll interrupted by signal" << endl;
+			return;
+		}
 		if (log_level >= logERROR)
-			LOG_ERR << "poll error" << endl;
-		return;
+			LOG_ERR << "ppoll error" << endl;
+		throw std::runtime_error("Error condition upon execution of ppoll()! errno = " + std::to_string(errno));
 	}
 
 	// If something happened on the master socket,
@@ -197,9 +226,11 @@ void HwioServer::pool_client_msgs() {
 		if ((e & POLLERR) | (e & POLLHUP) | (e & POLLNVAL)) {
 			if (fd.fd == master_socket) {
 				LOG_ERR << "Error on master socket" << std::endl;
-				continue;
+				throw std::runtime_error("Error condition on master socket! fd.revents = " + std::to_string(e));
 			} else {
-				LOG_ERR << "Error on socket" << fd.fd << std::endl;
+				LOG_ERR << "Error on socket " << fd.fd << " fd.revents = " << std::to_string(e) << std::endl;
+				remove_client(fd.fd);
+				removed_poll_fds.push_back(fd.fd);
 			}
 		} else if (fd.fd == master_socket) {
 			struct sockaddr_in address;
@@ -219,8 +250,25 @@ void HwioServer::pool_client_msgs() {
 			}
 			add_new_client(new_socket);
 		} else {
-			handle_client_requests(fd.fd);
+			handle_multiple_client_requests(fd.fd);
 		}
+	}
+	if (removed_poll_fds.size() > 0) {
+		auto new_poll_fds = std::vector<struct pollfd>();
+		// Clean up after fd error condition
+		for (auto & fd : poll_fds) {
+			bool add = true;
+			for (auto & rfd : removed_poll_fds) {
+				if (fd.fd == rfd) {
+					add = false;
+					break;
+				}
+			}
+			if (add)
+				new_poll_fds.push_back(fd);
+		}
+		poll_fds.swap(new_poll_fds);
+		removed_poll_fds.clear();
 	}
 }
 void HwioServer::handle_client_requests(int sd) {
@@ -242,11 +290,12 @@ void HwioServer::handle_client_requests(int sd) {
 	Hwio_packet_header header;
 
 	int rx_data_size = 0;
+	uint8_t* data_ptr = reinterpret_cast<uint8_t*>(&header);
 	while (true) {
 		errno = 0;
-		int s = recv(sd, &header, sizeof(Hwio_packet_header), MSG_DONTWAIT);
+		int s = recv(sd, data_ptr+rx_data_size, sizeof(Hwio_packet_header) - rx_data_size, MSG_DONTWAIT);
 		if (s < 0) {
-			if (errno == EAGAIN || errno == EINTR) {
+			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 				continue;
 			} else {
 				// process as error
@@ -254,7 +303,9 @@ void HwioServer::handle_client_requests(int sd) {
 				break;
 			}
 		} else if (s == 0) {
-			return;
+			// process as error
+			rx_data_size = 0;
+			break;
 		} else {
 			rx_data_size += s;
 			if (rx_data_size == sizeof(Hwio_packet_header))
@@ -263,8 +314,29 @@ void HwioServer::handle_client_requests(int sd) {
 	}
 	if (rx_data_size != 0) {
 		bool err = false;
+		data_ptr = reinterpret_cast<uint8_t*>(&rx_buffer);
+		rx_data_size = 0;
 		if (header.body_len) {
-			rx_data_size = recv(sd, rx_buffer, header.body_len, MSG_DONTWAIT);
+			while (true) {
+				int s = recv(sd, data_ptr + rx_data_size, header.body_len - rx_data_size, MSG_DONTWAIT);
+				if (s < 0) {
+					if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+						continue;
+					} else {
+						// process as error
+						rx_data_size = 0;
+						break;
+					}
+				} else if (s == 0) {
+					// process as error
+					rx_data_size = 0;
+					break;
+				} else {
+					rx_data_size += s;
+					if (rx_data_size == header.body_len)
+						break;
+				}
+			}
 			if (rx_data_size == 0) {
 				respMeta = send_err(MALFORMED_PACKET,
 						std::string(
@@ -278,15 +350,25 @@ void HwioServer::handle_client_requests(int sd) {
 		if (!err) {
 			respMeta = handle_msg(client, header);
 			if (respMeta.tx_size) {
-				if (send(sd, tx_buffer, respMeta.tx_size, 0) < 0) {
-					respMeta = PProcRes(true, 0);
-					if (log_level >= logERROR) {
-						std::cerr
-								<< "[HWIO, server] Can not send response to client "
-								<< (client->id) << " (socket=" << (client->fd)
-								<< ")" << std::endl;
+				size_t bytesWr = 0;
+				int result;
+				while (bytesWr < respMeta.tx_size) {
+					result = send(sd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
+					if (result < 0) {
+						if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+							continue;
+						}
+						respMeta = PProcRes(true, 0);
+						if (log_level >= logERROR) {
+							std::cerr
+									<< "[HWIO, server] Can not send response to client "
+									<< (client->id) << " (socket=" << (client->fd)
+									<< ")" << std::endl;
+							break; 
+						}
 					}
-				}
+					bytesWr += result;
+                                }
 			}
 		}
 	}
@@ -304,27 +386,141 @@ void HwioServer::handle_client_requests(int sd) {
 					std::cout << "        " << s.to_str() << endl;
 			}
 		}
-		clients[client->id] = nullptr;
-		fd_to_client.erase(sd);
-		auto new_poll_fds = std::vector<struct pollfd>();
-		int i = 0;
-		for (auto fd : poll_fds) {
-			if (fd.fd == sd)
-				continue;
-			new_poll_fds.push_back(fd);
-			i++;
-		}
-		//	poll_fds.erase(
-		//			std::remove_if(poll_fds.begin(), poll_fds.end(),
-		//					[sd](struct pollfd item) {
-		//						return item.fd == sd;
-		//					}));
-		//
-		poll_fds = new_poll_fds;
-		//close(sd); is in desctructor
-		delete client;
+		remove_client(sd);
+		removed_poll_fds.push_back(sd);
 	}
 }
+
+bool HwioServer::read_from_socket(ClientInfo * client) {
+    char * rd_ptr = client->rx_buffer.buffer;
+    size_t rd_len = RxBuffer::RX_BUFFER_SIZE;
+    
+    if (client->rx_buffer.curr_len > 0) {
+        if (client->rx_buffer.curr_ptr != client->rx_buffer.buffer) {
+           memcpy(client->rx_buffer.buffer, client->rx_buffer.curr_ptr, client->rx_buffer.curr_len);
+        }
+        rd_ptr += client->rx_buffer.curr_len;
+        rd_len -= client->rx_buffer.curr_len;
+    }
+    client->rx_buffer.curr_ptr = client->rx_buffer.buffer;
+//     std::cout << "read_from_socket:" << (void*)client->rx_buffer.buffer << " " << (void*)rd_ptr << " " << rd_len << std::endl;
+    while (true) {
+        errno = 0;
+        int s = recv(client->fd, rd_ptr, rd_len, MSG_DONTWAIT);
+        if (s > 0) {
+            client->rx_buffer.curr_len += s;
+//             std::cout << "read_from_socket:" << s << " " << client->rx_buffer.curr_len << std::endl;
+            return true;
+        } else {
+            if (s < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                    continue;
+                } else {
+                    // process as error
+                    return false;
+                }
+            } else {
+                // process as error
+                return false;
+            }
+        }
+    }
+    // Should never happen
+    return false;
+}
+
+void HwioServer::parse_msgs(ClientInfo * client) {
+    while (client->rx_buffer.curr_len >= sizeof(Hwio_packet_header)) {
+        Hwio_packet_header *header = reinterpret_cast<Hwio_packet_header*>(client->rx_buffer.curr_ptr);
+//         std::cout << "parse_msgs:" << (void*)header << " " << (void*)client->rx_buffer.curr_ptr << " " << client->rx_buffer.curr_len << std::endl;
+        PProcRes respMeta(true, 0);
+        size_t msg_len = sizeof(Hwio_packet_header) + header->body_len;
+        if (msg_len <= client->rx_buffer.curr_len) {
+            rx_buffer = client->rx_buffer.curr_ptr + sizeof(Hwio_packet_header);
+//             std::cout << "parse_msgs:" << msg_len << " " <<  (int)header->command << " " << header->body_len << " " << (void*)rx_buffer << std::endl;
+            respMeta = handle_msg(client, *header);
+            if (respMeta.tx_size) {
+                size_t bytesWr = 0;
+                int result;
+                while (bytesWr < respMeta.tx_size) {
+                    result = send(client->fd, tx_buffer + bytesWr, respMeta.tx_size - bytesWr, 0);
+                    if (result < 0) {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                            continue;
+                        }
+                        respMeta = PProcRes(true, 0);
+                        if (log_level >= logERROR) {
+                            std::cerr
+                                    << "[HWIO, server] Can not send response to client "
+                                    << (client->id) << " (socket=" << (client->fd)
+                                    << ")" << std::endl;
+                            break; 
+                        }
+                    }
+                    bytesWr += result;
+                }
+            }
+            client->rx_buffer.curr_ptr += msg_len;
+            client->rx_buffer.curr_len -= msg_len;
+//             std::cout << "parse_msgs:" << (void*)client->rx_buffer.curr_ptr << " " << client->rx_buffer.curr_len << std::endl;
+            if (!respMeta.disconnect) {
+                continue;
+            } else {
+                // Somebody disconnected, get his details and print
+                // packet had wrong format or connection was disconnected.
+                if (log_level >= logINFO) {
+                    std::cout << "[INFO] " << "Client " << client->id << " socket:"
+                            << client->fd << " disconnected" << endl;
+
+                    for (auto d : client->devices) {
+                        std::cout << "    owned device:" << endl;
+                        for (auto & s : d->get_spec())
+                            std::cout << "        " << s.to_str() << endl;
+                    }
+                }
+                remove_client(client->fd);
+                removed_poll_fds.push_back(client->fd);
+            }
+        }
+        // Message is incomplete break the cycle
+        break;
+    }
+}
+
+void HwioServer::handle_multiple_client_requests(int sd) {
+	// else its some IO operation on some other socket
+	//Check if it was for closing , and also read the
+	//incoming message
+	std::map<int, ClientInfo*>::iterator _client = fd_to_client.find(sd);
+	ClientInfo * client = nullptr;
+	if (_client == fd_to_client.end()) {
+		client = add_new_client(sd);
+	} else {
+		client = _client->second;
+	}
+// 	std::cout << "handle_client_requests:" << sd << " " << client->id
+// 			<< std::endl;
+	assert(client->fd == sd);
+	if(read_from_socket(client)) {
+		parse_msgs(client);
+	} else {
+		// Somebody disconnected, get his details and print
+		// packet had wrong format or connection was disconnected.
+		if (log_level >= logINFO) {
+			std::cout << "[INFO] " << "Client " << client->id << " socket:"
+					<< client->fd << " disconnected" << endl;
+
+			for (auto d : client->devices) {
+				std::cout << "    owned device:" << endl;
+				for (auto & s : d->get_spec())
+					std::cout << "        " << s.to_str() << endl;
+			}
+		}
+		remove_client(sd);
+		removed_poll_fds.push_back(sd);
+        }
+}
+
 
 HwioServer::~HwioServer() {
 	if (log_level >= logINFO)

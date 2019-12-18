@@ -23,6 +23,7 @@
 #include <map>
 #include <type_traits>
 #include <functional>
+#include <vector>
 
 #include "hwio_remote.h"
 #include "ihwio_dev.h"
@@ -30,10 +31,25 @@
 
 namespace hwio {
 
+class RxBuffer {
+    friend class HwioServer;
+    private:
+        static const size_t RX_BUFFER_SIZE = 65536;
+        char buffer[RX_BUFFER_SIZE];
+        char *curr_ptr;
+        size_t curr_len;
+    public:
+        RxBuffer() : curr_len(0) {
+            curr_ptr = buffer;
+        }
+        ~RxBuffer() {}
+};
+    
 class ClientInfo {
 public:
 	int id;
 	int fd;
+	RxBuffer rx_buffer;
 	std::vector<ihwio_dev *> devices;
 	ClientInfo(int id, int _socket) :
 			id(id), fd(_socket), devices() {
@@ -62,10 +78,12 @@ private:
 	int master_socket;
 
 	// buffers for rx/tx
-	char rx_buffer[BUFFER_SIZE];
+	//char rx_buffer[BUFFER_SIZE];
+	char* rx_buffer;
 	char tx_buffer[BUFFER_SIZE];
 
 	std::vector<struct pollfd> poll_fds;
+	std::vector<int> removed_poll_fds;
 	std::map<int, ClientInfo*> fd_to_client;
 
 	// meta-informations about clients in server
@@ -110,6 +128,16 @@ private:
 	 * HWIO remote call of plugin function
 	 */
 	PProcRes handle_remote_call(ClientInfo * client, Hwio_packet_header header);
+        
+        /*
+	 * Handle query for fast RPC function ID
+	 * */
+	PProcRes handle_get_rpc_fn_id(ClientInfo * client, Hwio_packet_header header);
+        
+	/**
+	 * HWIO fast remote call of plugin function
+	 */
+	PProcRes handle_fast_remote_call(ClientInfo * client, Hwio_packet_header header);
 
 	/*
 	 * Process message from client
@@ -121,8 +149,13 @@ private:
 	 * Spot new ClientInfo instance in this->clients
 	 **/
 	ClientInfo * add_new_client(int socket);
+	void remove_client(int socket);
 
 	void handle_client_requests(int client_fd);
+
+	bool read_from_socket(ClientInfo * client);
+	void parse_msgs(ClientInfo * client);
+	void handle_multiple_client_requests(int client_fd);
 
 	static constexpr unsigned MAX_PENDING_CONNECTIONS = 32;
 	static constexpr unsigned POLL_TIMEOUT_MS = 100;
@@ -145,6 +178,8 @@ public:
 		size_t ret_size;
 	};
 	std::map<const std::string, plugin_info_s> plugins;
+	std::vector<plugin_info_s> plugins_fast;
+	std::vector<std::string> plugins_fast_names;
 	HwioServer(struct addrinfo * addr, std::vector<ihwio_bus *> buses);
 	void prepare_server_socket();
 
@@ -173,6 +208,8 @@ public:
 		else
 			p.ret_size = sizeof(RET_T);
 		plugins[name] = p;
+		plugins_fast.push_back(p);
+		plugins_fast_names.push_back(name);
 	}
 	~HwioServer();
 };

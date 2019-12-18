@@ -125,4 +125,36 @@ hwio_device_remote::~hwio_device_remote() {
 	// nothing is required, parent bus is closing connections
 }
 
+bool hwio_device_remote::is_rpc_available(const char * fn_name) {
+	auto buff = reinterpret_cast<HwioFrame<GetRemoteCallId>*>(server->tx_buffer);
+	buff->header.command = HWIO_CMD_GET_REMOTE_CALL_ID;
+	strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
+	buff->body.dev_id = id;
+	buff->header.body_len = sizeof(GetRemoteCallId);
+	server->tx_pckt();
+	Hwio_packet_header h;
+	server->rx_pckt(&h);
+	assert_response(&h, HWIO_CMD_GET_REMOTE_CALL_ID_RESP,
+			"Wrong response from server on read request ");
+
+	auto resp = reinterpret_cast<GetRemoteCallIdResp*>(server->rx_buffer);
+	return resp->found and (resp->fn_id >= 0);
+}
+
+int32_t hwio_device_remote::get_rpc_fn_id(const char * fn_name) {
+	auto buff = reinterpret_cast<HwioFrame<GetRemoteCallId>*>(server->tx_buffer);
+	buff->header.command = HWIO_CMD_GET_REMOTE_CALL_ID;
+	strncpy((char *)buff->body.fn_name, fn_name, MAX_NAME_LEN);
+	buff->body.dev_id = id;
+	buff->header.body_len = sizeof(GetRemoteCallId);
+	server->tx_pckt();
+	Hwio_packet_header h;
+	server->rx_pckt(&h);
+	assert_response(&h, HWIO_CMD_GET_REMOTE_CALL_ID_RESP,
+			"Wrong response from server on read request ");
+
+	auto resp = reinterpret_cast<GetRemoteCallIdResp*>(server->rx_buffer);
+	return resp->fn_id;
+}
+
 }

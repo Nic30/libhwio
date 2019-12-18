@@ -16,6 +16,12 @@ const char * hwio_client_to_server_con::DEFAULT_SERVER_ADDRESS =
 		"127.0.0.1:8896";
 #endif
 
+#ifdef HWIO_BUSY_WAIT_IO_CLIENT
+const int r_flag = MSG_DONTWAIT;
+#else
+const int r_flag = 0;
+#endif
+
 const size_t hwio_client_to_server_con::DEV_TIMEOUT = 500000;
 
 hwio_client_to_server_con::hwio_client_to_server_con(std::string host) :
@@ -55,11 +61,17 @@ int hwio_client_to_server_con::rx_bytes(size_t size) {
 	assert(size <= BUFFER_SIZE);
 	while (bytesRead < size) {
 		errno = 0;
-		result = recv(sockfd, rx_buffer + bytesRead, size - bytesRead, MSG_DONTWAIT);
+		result = recv(sockfd, rx_buffer + bytesRead, size - bytesRead, r_flag);
 		if (result < 0) {
-			if (errno == EAGAIN || errno == EINTR) {
+#ifdef HWIO_BUSY_WAIT_IO_CLIENT
+			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 				continue;
 			}
+#else
+			if (errno == EINTR) {
+				continue;
+			}
+#endif
 			throw std::runtime_error(std::string("rx_bytes: ") + strerror(errno));
 		}
 		bytesRead += result;
@@ -79,15 +91,28 @@ void hwio_client_to_server_con::rx_pckt(Hwio_packet_header * header) {
 
 void hwio_client_to_server_con::tx_pckt() {
 	Hwio_packet_header * f = reinterpret_cast<Hwio_packet_header*>(tx_buffer);
-	int err = send(sockfd, tx_buffer, f->body_len + sizeof(Hwio_packet_header),
-			0);
-
-	if (err < 0) {
-		std::stringstream ss;
-		ss
-				<< "hwio_client_to_server_con::tx_pckt, Unable to send message to server,"
-				<< strerror(errno);
-		throw hwio_error_rw(ss.str());
+	size_t bytesWr = 0;
+	int result;
+	size_t size = f->body_len + sizeof(Hwio_packet_header);
+	while (bytesWr < size) {
+		result = send(sockfd, tx_buffer + bytesWr, size - bytesWr, 0);
+		if (result < 0) {
+#ifdef HWIO_BUSY_WAIT_IO_CLIENT
+			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+				continue;
+			}
+#else
+			if (errno == EINTR) {
+				continue;
+			}
+#endif
+			std::stringstream ss;
+			ss
+					<< "hwio_client_to_server_con::tx_pckt, Unable to send message to server,"
+					<< strerror(errno);
+			throw hwio_error_rw(ss.str());
+		}
+		bytesWr += result;
 	}
 }
 
