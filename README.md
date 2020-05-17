@@ -48,6 +48,8 @@ This files currently contains definitions of busses where libhwio should search 
 * [snap](https://github.com/open-power/snap) - framework for passing actions to hardware accelerators, CAPI, HLS, userspace, IBM
 * [ipbus](https://github.com/ipbus) - a simple packet-based control protocol for reading and modifying memory-mapped resources within FPGA
 * [fusd](https://github.com/Godzil/fusd) - Framework for User-Space Devices
+* [vdp](https://github.com/Sheph/vdp) - Virtual Device Platform, cross platform device emulation env
+
 
 ## installation
 ```
